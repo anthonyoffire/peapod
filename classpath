@@ -1,0 +1,1 @@
+export CLASSPATH="$CLASSPATH:$(pwd):$(pwd)/target/Peapod-1.0.jar:$(pwd)/target/test-classes:$(pwd)/target/classes"
