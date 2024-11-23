@@ -1,5 +1,5 @@
 # logical_peapod
-PEAPOD logical expansion
+PEAPOD logical expansion.
 
 ## Build & Run
 Once per terminal session, from main dir, run:
