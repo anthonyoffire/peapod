@@ -3,7 +3,8 @@ package util;
 public class ClauseItem {
 
     private String certType;
-    
+    private int val;
+
     public ClauseItem(String certType, int val) {
         this.certType = certType;
         this.val = val;
@@ -11,7 +12,6 @@ public class ClauseItem {
     public String getCertType() {
         return certType;
     }
-    private int val;
     public int getVal() {
         return val;
     }
