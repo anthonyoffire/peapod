@@ -1,13 +1,13 @@
 package util;
 
 public class Certificate {
-    private String type;
+    private CertType certType;
 
-    public Certificate(String type) {
-        this.type = type;
+    public Certificate(CertType certType) {
+        this.certType = certType;
     }
 
     public String getType() {
-        return type;
+        return certType;
     }
 }
