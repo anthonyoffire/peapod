@@ -1,18 +1,20 @@
 package util;
 
+import java.math.BigInteger;
+
 public class ClauseItem {
 
-    private String certType;
-    private int val;
+    private CertType certType;
+    private BigInteger val;
 
-    public ClauseItem(String certType, int val) {
+    public ClauseItem(CertType certType, BigInteger val) {
         this.certType = certType;
         this.val = val;
     }
-    public String getCertType() {
+    public CertType getCertType() {
         return certType;
     }
-    public int getVal() {
+    public BigInteger getVal() {
         return val;
     }
 }

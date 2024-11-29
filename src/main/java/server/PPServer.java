@@ -8,6 +8,9 @@ import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.RMISocketFactory;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -18,6 +21,9 @@ import org.apache.commons.cli.*;
 
 import util.*;
 
+/**
+ *  PeaPod Server
+ */
 public class PPServer implements Service {
 	//Global vars
 	private String thisHost;
@@ -29,7 +35,7 @@ public class PPServer implements Service {
 	
 	private ConcurrentLinkedQueue<Job> jobQueue = new ConcurrentLinkedQueue<>();
 	private ConcurrentHashMap<Integer, Object> jobResults = new ConcurrentHashMap<>();
-
+	private HashMap<UUID, Entry> entries = new HashMap();
 	private static final String SERVER_NAME = "Service";
 
 	public PPServer() throws RemoteException{
@@ -67,7 +73,7 @@ public class PPServer implements Service {
 			}
 			// Handle a job
 			Job job = jobQueue.poll();
-			Object result = job.execute(/* args TBD */);
+			Object result = job.execute(entries);
 			
 			jobResults.put(job.getJid(), result);
 			
@@ -82,15 +88,15 @@ public class PPServer implements Service {
 	 * adding more methods, also change them in Service.java
 	 */
 	@Override
-	public synchronized Object post() throws RemoteException {
-		Job job = new PostJob();
+	public synchronized Object post(Clause clause, String ciphertext) throws RemoteException {
+		Job job = new PostJob(clause, ciphertext);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);
 		return getResult(jid);
 	}
 	@Override
-	public synchronized Object get() throws RemoteException {
+	public synchronized Object get(UUID id, List<Certificate> certs) throws RemoteException {
 		Job job = new GetJob();
 		int jid = job.getJid();
 		jobQueue.add(job);

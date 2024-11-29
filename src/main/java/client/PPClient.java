@@ -1,10 +1,19 @@
 package client;
 
 import org.apache.commons.cli.*;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.math.BigInteger;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import util.*;
 
 public class PPClient {
@@ -16,6 +25,11 @@ public class PPClient {
     private OpType opType;
     private static String serverIP;
     private int serverPort;
+
+	private UUID rid;
+	private List<Certificate> certs;
+	private String ciphertext;
+	private Clause clause;
 
     public static void main(String[] args) {
 		System.setProperty("javax.net.ssl.trustStore", "src/main/resources/server.truststore");
@@ -39,12 +53,12 @@ public class PPClient {
 			switch(opType){
 				case POST:
 					System.out.println("Requesting POST operation...");
-					result = stub.post();
+					result = stub.post(clause, ciphertext);
 					System.out.println(result);
 					break;
 				case GET:
 					System.out.println("Requesting GET operation...");
-					result = stub.get();
+					result = stub.get(rid, certs);
 					System.out.println(result);
 					break;
 				case DELETE:
@@ -58,6 +72,74 @@ public class PPClient {
 		}
 	
 	}
+	
+    private static String strFromFile(String path) {
+        StringBuilder content = new StringBuilder();
+        try (BufferedReader reader = 
+			new BufferedReader(
+			new FileReader(path))){  
+ 
+				String line;
+				while ((line = reader.readLine()) != null) {
+					content.append(line).append(System.lineSeparator());
+				}
+        } catch (IOException e){
+			System.err.println("Error reading file "+path);
+			System.exit(1);
+		}
+        return content.toString();
+    }
+	private static ArrayList<Certificate> certsFromFile(String path){
+		ArrayList<Certificate> certs = new ArrayList<>();
+        try (BufferedReader reader = 
+			new BufferedReader(
+			new FileReader(path))){  
+ 
+				String line;
+				while ((line = reader.readLine()) != null) {
+					String tokens[] = line.split(" ");
+					for(String token : tokens){
+						CertType type = CertType.typeFromString(token);
+						if(type != null)
+							certs.add(new Certificate(type));
+					}
+				}
+        } catch (IOException e){
+			System.err.println("Error reading file "+path);
+			System.exit(1);
+		}
+        return certs;
+	}
+	/**
+	 * Clause file format: 
+	 * <CertType1> <number1>\n
+	 * <CertType2> <number2>\n
+	 * ...
+	 * "CertType"s must have underscore instead of space
+	 * @param path
+	 * @return Clause item
+	 */
+	private static Clause clauseFromFile(String path) {
+        Clause cl = new Clause(new ArrayList<ClauseItem>());
+        try (BufferedReader reader = 
+			new BufferedReader(
+			new FileReader(path))){  
+ 
+				String line;
+				while ((line = reader.readLine()) != null) {
+					String tokens[] = line.split(" ");
+					if(tokens.length != 2)
+						throw new IOException("Invalid clause file");
+					CertType type = CertType.typeFromString(tokens[0]);
+					BigInteger val = new BigInteger(tokens[1]);
+					cl.addItem(new ClauseItem(type, val));
+				}
+        } catch (IOException e){
+			System.err.println("Error reading file "+path);
+			System.exit(1);
+		}
+        return cl;
+    }
     /**
      * printUsage: Something went wrong. Print usage, message, and quit.
      * @param message the error message to print
@@ -80,10 +162,23 @@ public class PPClient {
 			if(serverIP == null)
 				throw new ParseException("Must specify server IP");
 
-			if(cmd.hasOption('p'))
+			if(cmd.hasOption('p')){
 				opType  = OpType.POST;
-			else if (cmd.hasOption('g'))
+				if(!cmd.hasOption("pt") || !cmd.hasOption("cl"))
+					throw new ParseException("Must specify clause and plaintext files");
+				clause = clauseFromFile(cmd.getOptionValue("cl"));
+				ciphertext = strFromFile(cmd.getOptionValue("pt"));
+				
+			}
+			else if (cmd.hasOption('g')){
 				opType = OpType.GET;
+				if(!cmd.hasOption("id") || !cmd.hasOption("ct"))
+					throw new ParseException("Must specify request ID and certificate path");
+				
+				rid = UUID.fromString(cmd.getOptionValue("id"));
+				certs = certsFromFile(cmd.getOptionValue("ct"));
+				
+			}
 			else if (cmd.hasOption('d'))
 				opType = OpType.DELETE;
 
@@ -128,9 +223,17 @@ public class PPClient {
 		CREDENTIALS.setArgName("cred");
 		options.addOption(CREDENTIALS);
 
-		Option REQ_ID = new Option("rid", "request_id", true, "Target ID for request to server");
+		Option REQ_ID = new Option("id", "request_id", true, "Target ID for request to server");
 		REQ_ID.setArgName("reqID");
 		options.addOption(REQ_ID);
+
+		Option PLAINTEXT = new Option("pt", "plaintext", true, "Plaintext to encrypt for post");
+		REQ_ID.setArgName("plaintext");
+		options.addOption(PLAINTEXT);
+
+		Option CLAUSE = new Option("cl", "clause", true, "Clause to post");
+		REQ_ID.setArgName("clause");
+		options.addOption(CLAUSE);
 
 		options.addOptionGroup(OP_TYPE);
 

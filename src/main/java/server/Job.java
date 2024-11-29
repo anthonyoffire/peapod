@@ -1,53 +1,60 @@
 package server;
 
+import java.util.HashMap;
 import java.util.Random;
+import java.util.UUID;
 
-/* args must be the same for all execute methods. if you need a new arg, add to all of them */
-public interface Job {
-    public int getJid();
-    public Object execute(/* args TBD */);
-}
-class PostJob implements Job {
+import util.*;
+
+/* Functionality for all jobs */
+public abstract class Job {
     private int jid;
-
-    public PostJob(){
+    public Job(){
         this.jid = new Random().nextInt(1000000);
     }
-    public int getJid() {
+    public int getJid(){
         return jid;
+    };
+    // execute: override this method
+    public Object execute(HashMap<UUID, Entry> entries){
+        return null;
+    };
+}
+class PostJob extends Job {
+    private UUID uuid;
+    private Clause clause;
+    private String ciphertext;
+
+    public PostJob(Clause clause, String ciphertext){
+        super();
+        this.uuid = UUID.randomUUID();
+        this.clause = clause;
+        this.ciphertext = ciphertext;
     }
     @Override
-    public Object execute(/* args TBD */){
-        /* POST FUNCTIONALITY GOES HERE */
-        return "PostJob Result";
+    public Object execute(HashMap<UUID, Entry> entries){
+        entries.put(uuid, new Entry(clause, ciphertext));
+        return uuid;
     }
 }
-class GetJob implements Job {
-    private int jid;
+class GetJob extends Job {
 
     public GetJob(){
-        this.jid = new Random().nextInt(1000000);
-    }
-    public int getJid() {
-        return jid;
+        super();
     }
     @Override
-    public Object execute(/* args TBD */){
+    public Object execute(HashMap<UUID, Entry> entries){
         /* GET FUNCTIONALITY GOES HERE */
         return "GetJob Result";
     }
 }
-class DeleteJob implements Job {
-    private int jid;
+class DeleteJob extends Job {
 
     public DeleteJob(){
-        this.jid = new Random().nextInt(1000000);
-    }
-    public int getJid() {
-        return jid;
+        super();
     }
     @Override
-    public Object execute(/* args TBD */){
+    public Object execute(HashMap<UUID, Entry> entries){
         /* DELETE FUNCTIONALITY GOES HERE */
         return "DeleteJob Result";
     }

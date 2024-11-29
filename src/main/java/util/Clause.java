@@ -11,5 +11,8 @@ public class Clause {
     public ArrayList<ClauseItem> getClause() {
         return clause;
     }
+    public void addItem(ClauseItem item){
+        clause.add(item);
+    }
 }
 

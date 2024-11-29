@@ -7,7 +7,7 @@ public class Certificate {
         this.certType = certType;
     }
 
-    public String getType() {
+    public CertType getType() {
         return certType;
     }
 }
