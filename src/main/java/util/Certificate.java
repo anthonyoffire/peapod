@@ -1,7 +1,10 @@
 package util;
 
-public class Certificate {
+import java.io.Serializable;
+
+public class Certificate implements Serializable{
     private CertType certType;
+    private static final long serialVersionUID = 4000L;
 
     public Certificate(CertType certType) {
         this.certType = certType;

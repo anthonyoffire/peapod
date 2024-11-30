@@ -1,9 +1,11 @@
 package util;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.List;
 
-public class Clause {
+public class Clause implements Serializable{
     private List<ClauseItem> clause;
+    private static final long serialVersionUID = 2000L;
 
     public Clause(List<ClauseItem> clause) {
         this.clause = clause;

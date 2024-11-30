@@ -1,12 +1,14 @@
 package util;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 
-public class ClauseItem {
+public class ClauseItem implements Serializable{
 
     private CertType certType;
     private BigInteger val;
     private int groupCode;
+    private static final long serialVersionUID = 3000L;
 
     public ClauseItem(CertType certType, BigInteger val, int groupCode) {
         this.certType = certType;

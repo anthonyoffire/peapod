@@ -1,11 +1,13 @@
 package elgamal;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
-public class ElgamalScheme {
+public class ElgamalScheme implements Serializable{
     private BigInteger p, g;
     private int bitlen;
+    private static final long serialVersionUID = 5000L;
 
     public ElgamalScheme(int bitLen){
         this.bitlen = bitLen;

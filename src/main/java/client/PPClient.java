@@ -110,7 +110,7 @@ public class PPClient {
 	}
 	/**
 	 * Encrypt the clause values with Elgamal
-	 * @param es
+	 * 
 	 */
 	private void elgamalEncryptClause(){
 		for(ClauseItem item: clause.getClause()){
@@ -120,21 +120,22 @@ public class PPClient {
 			item.setVal(elgamalScheme.encrypt(key, message));
 		}
 	}
-    private static String strFromFile(String path) {
-        StringBuilder content = new StringBuilder();
+    private static BigInteger bigIntFromFile(String path) {
+        BigInteger binFile = BigInteger.ZERO;
         try (BufferedReader reader = 
 			new BufferedReader(
 			new FileReader(path))){  
- 
-				String line;
-				while ((line = reader.readLine()) != null) {
-					content.append(line).append(System.lineSeparator());
+				// Read char by char, convert to BigInt
+				int c;
+				while ((c = reader.read()) != -1) {
+					binFile = binFile.shiftLeft(8);
+					binFile = binFile.add(BigInteger.valueOf(c));
 				}
         } catch (IOException e){
 			System.err.println("Error reading file "+path);
 			System.exit(1);
 		}
-        return content.toString();
+        return binFile;
     }
 	private static ArrayList<Certificate> certsFromFile(String path){
 		ArrayList<Certificate> certs = new ArrayList<>();
@@ -249,7 +250,7 @@ public class PPClient {
 				if(!cmd.hasOption("pt") || !cmd.hasOption("cl") || !cmd.hasOption("u"))
 					throw new ParseException("Must specify username, clause and plaintext files");
 				System.out.println("Getting Plaintext...");
-				plaintext = new BigInteger(strFromFile(cmd.getOptionValue("pt")));
+				plaintext = bigIntFromFile(cmd.getOptionValue("pt"));
 				System.out.println("Getting Username...");
 				userName = cmd.getOptionValue("u");
 				
