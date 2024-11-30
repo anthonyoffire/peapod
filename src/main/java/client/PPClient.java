@@ -8,7 +8,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,6 +51,7 @@ public class PPClient {
 	private String userName;
     private Map<CertType, BigInteger> certKeys;
 	private ElgamalScheme elgamalScheme;
+	private BigInteger symmetricKey;
 
     public static void main(String[] args) {
 		System.setProperty("javax.net.ssl.trustStore", "src/main/resources/server.truststore");
@@ -185,30 +185,41 @@ public class PPClient {
 						System.err.println("Invalid group number format: " +attributes[1].trim());
 					}
 					LogicOpType logicOperationType = LogicOpType.typeFromString(attributes[2].trim());
-					int x;
+					int numberRequired = 0;
 					if (logicOperationType == LogicOpType.XOFN) {
-						x = Integer.parseInt(attributes[3].trim());
+						numberRequired = Integer.parseInt(attributes[3].trim());
 					}
 					if (groups.containsKey(groupCode)) {
 						ClauseGroup group = groups.get(groupCode);
 						group.addCertToGroup(cert);
+						if (logicOperationType == LogicOpType.XOFN) {
+							group.incrementNumAvailable();
+						}
 					} else {
-						groups.put(groupCode, new ClauseGroup(logicOperationType, cert));
+						int numberAvailable = 1;
+						groups.put(groupCode, new ClauseGroup(logicOperationType, cert, numberRequired, numberAvailable));
 					}
 				}
         } catch (IOException e){
 			System.err.println("Error reading file "+path);
 			System.exit(1);
 		}
+		BigInteger symKey = BigInteger.ONE;
 		Set<Integer> FinalGroupCodes = new HashSet<>();
 		for (Integer key : groups.keySet()) {
 			ClauseGroup group = groups.get(key);
-			group.processGroup(cl, FinalGroupCodes, elgamalScheme);
-			System.out.println("Group: "+key+", ClauseGroup OP: "+group.getOperation()+", Certs: "+group.getCertList());
+			BigInteger subkey = group.processGroup(cl, FinalGroupCodes, elgamalScheme);
+			if (subkey.equals(BigInteger.valueOf(-1))) {
+				System.err.println("ERROR: Could not process group");
+			}
+			symKey = symKey.multiply(subkey).mod(elgamalScheme.getP());
+			System.out.println("Group: "+key+", ClauseGroup OP: "+group.getOperation()+", Certs: "+group.getCertList()+", Num Required (XOFN): "+group.getNumRequired());
 		}
 		for (ClauseItem item : cl.getClause()) {
 			System.out.println("CertType: "+item.getCertType()+", Group Code: "+item.getGroupCode()+", Subkey: "+item.getVal());
 		}
+		// TODO also put symmetric key somewhere?
+		this.symmetricKey = symKey;
         return cl;
     }
     /**

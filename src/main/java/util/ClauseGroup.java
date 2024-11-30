@@ -11,15 +11,22 @@ import elgamal.ElgamalScheme;
 public class ClauseGroup {
     private LogicOpType operation;
     private List<CertType> certList;
+    private Integer numRequired;
+    private Integer numAvailable;
 
-    public ClauseGroup(LogicOpType op, CertType cert) {
+    public ClauseGroup(LogicOpType op, CertType cert, Integer numRequired, Integer numAvailable) {
         this.operation = op;
         this.certList = new ArrayList<>();
         this.certList.add(cert);
+        this.numRequired = numRequired;
+        this.numAvailable = numAvailable;
     }
 
     public void addCertToGroup(CertType cert) {
         this.certList.add(cert);
+    }
+    public void incrementNumAvailable() {
+        this.numAvailable++;
     }
     public LogicOpType getOperation() {
         return this.operation;
@@ -27,7 +34,13 @@ public class ClauseGroup {
     public List<CertType> getCertList() {
         return this.certList;
     }
-    public Integer processGroup(Clause clause, Set<Integer> groupCodes, ElgamalScheme scheme) {
+    public Integer getNumRequired() {
+        return this.numRequired;
+    }
+    public Integer getNumAvailable() {
+        return this.numAvailable;
+    }
+    public BigInteger processGroup(Clause clause, Set<Integer> groupCodes, ElgamalScheme scheme) {
         SecureRandom r = new SecureRandom();
         switch(this.operation) {
             case XOR:
@@ -45,7 +58,7 @@ public class ClauseGroup {
                     ClauseItem item = new ClauseItem(cert, subkey_xor, code);
                     clause.addItem(item);
                 }
-                return 0;
+                return subkey_xor;
             case ANDNAND:
                 // for ANDNAND each of the keys multiplied together need to equal 1 mod p
                 BigInteger runningTotal = BigInteger.ONE;
@@ -57,7 +70,7 @@ public class ClauseGroup {
                             subkey_andnand = runningTotal.modInverse(scheme.getP());
                         } catch (ArithmeticException e) {
                             System.err.println("First subkeys do not have a valid inverse for last subkey of ANDNAND group");
-                            return -1;
+                            return BigInteger.valueOf(-1);
                         }
                     } else {
                         // for first in the groups pick a random subkey
@@ -76,7 +89,7 @@ public class ClauseGroup {
                     clause.addItem(item);
                 }
                 assert runningTotal.equals(BigInteger.ONE) : "ANDNAND: keys do not multiply to 1 mod p despite finding inverse";
-                return 0;
+                return runningTotal;
             case OR:
                 // for OR each cert in the group should have the same subkey and also the same group
                 BigInteger subkey_or = scheme.randomKey();
@@ -91,11 +104,25 @@ public class ClauseGroup {
                     ClauseItem item = new ClauseItem(cert, subkey_or, code);
                     clause.addItem(item);
                 }
-                return 0;
+                return subkey_or;
             case XOFN:
-                // TODO
+                // for XOFN each cert in the group should have the same subkey and unique groups
+                BigInteger subkey_xofn = scheme.getGenerator(this.numAvailable);
+                BigInteger total_key = subkey_xofn.modPow(BigInteger.valueOf(this.numRequired), scheme.getP());
+                int code2;
+                for (CertType cert : this.certList) {
+                    do {
+                        code2 = r.nextInt();
+                    } while (groupCodes.contains(code2));
+                    // add group code to list of group codes so we don't use it again
+                    groupCodes.add(code2);
+                    // add clause item to final clause
+                    ClauseItem item = new ClauseItem(cert, subkey_xofn, code2);
+                    clause.addItem(item);
+                }
+                return total_key;
             default:
-                return -1;
+                return BigInteger.valueOf(-1);
         }
     }
 
