@@ -1,6 +1,6 @@
 package server;
 
-import java.net.InetAddress;
+import java.math.BigInteger;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -10,6 +10,7 @@ import java.rmi.server.RMISocketFactory;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -19,6 +20,7 @@ import javax.rmi.ssl.SslRMIServerSocketFactory;
 
 import org.apache.commons.cli.*;
 
+import elgamal.ElgamalScheme;
 import util.*;
 
 /**
@@ -26,17 +28,20 @@ import util.*;
  */
 public class PPServer implements Service {
 	//Global vars
-	private String thisHost;
 	private boolean verbose;
     private Options options;
 	private int port;
+	private final static String SERVER_NAME = "Service";
+	private final static int ELGAMAL_BIT_LENGTH = 1024;
 
 	private Object resultLock = new Object();
 	
 	private ConcurrentLinkedQueue<Job> jobQueue = new ConcurrentLinkedQueue<>();
 	private ConcurrentHashMap<Integer, Object> jobResults = new ConcurrentHashMap<>();
-	private HashMap<UUID, Entry> entries = new HashMap();
-	private static final String SERVER_NAME = "Service";
+	private Map<UUID, Entry> entries = new HashMap<>();
+	private ElgamalScheme elgamalScheme;
+	private Map<String, Map<CertType, BigInteger>> userTransKeys = new HashMap<>();
+	private BigInteger K;
 
 	public PPServer() throws RemoteException{
 		super();
@@ -49,9 +54,10 @@ public class PPServer implements Service {
         System.setProperty("javax.net.ssl.trustStorePassword", "password");
         try{
 			PPServer server = new PPServer();
-			server.thisHost = InetAddress.getLocalHost().getHostAddress();
 			server.parseArgs(args);
 			server.bindServer();
+			server.elgamalScheme = new ElgamalScheme(ELGAMAL_BIT_LENGTH);
+			server.K = server.elgamalScheme.randomKey();
 			server.handleJobs();
 		} catch (Exception e){
 			System.err.println(e.getMessage());
@@ -110,6 +116,27 @@ public class PPServer implements Service {
 		jobQueue.add(job);
 		waitForJob(jid);
 		return getResult(jid);
+	}
+	@Override
+	public synchronized Map<CertType, BigInteger> requestKeys(String user) throws RemoteException {
+		Map<CertType, BigInteger> userKeys = new HashMap<>();
+		Map<CertType, BigInteger> transKeys = new HashMap<>();
+		BigInteger p = elgamalScheme.getP();
+		BigInteger userKey, transKey;
+
+		for(CertType type:CertType.values()){
+			userKey = elgamalScheme.randomKey();
+			transKey = K.subtract(userKey).mod(p.subtract(new BigInteger("1")));
+			userKeys.put(type, userKey);
+			transKeys.put(type, transKey);
+		}
+		userTransKeys.put(user,transKeys);
+		return userKeys;
+		
+	}
+	@Override
+	public synchronized ElgamalScheme requestScheme() throws RemoteException {
+		return elgamalScheme;
 	}
 	/**
 	 * waitForJob: blocks until a job with jid is finished

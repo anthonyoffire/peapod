@@ -12,9 +12,11 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import util.*;
+import elgamal.ElgamalScheme;
 
 public class PPClient {
     // Global vars
@@ -30,6 +32,8 @@ public class PPClient {
 	private List<Certificate> certs;
 	private String ciphertext;
 	private Clause clause;
+	private String userName;
+    private Map<CertType, BigInteger> certKeys;
 
     public static void main(String[] args) {
 		System.setProperty("javax.net.ssl.trustStore", "src/main/resources/server.truststore");
@@ -52,6 +56,12 @@ public class PPClient {
 			Object result;
 			switch(opType){
 				case POST:
+					/**
+					 * Location for symmetric encryption of plaintext
+					 */
+					System.out.println("Requesting Elgamal key scheme...");
+					ElgamalScheme es = stub.requestScheme();
+					certKeys = stub.requestKeys(userName);
 					System.out.println("Requesting POST operation...");
 					result = stub.post(clause, ciphertext);
 					System.out.println(result);
@@ -111,13 +121,9 @@ public class PPClient {
         return certs;
 	}
 	/**
-	 * Clause file format: 
-	 * <CertType1> <number1>\n
-	 * <CertType2> <number2>\n
-	 * ...
-	 * "CertType"s must have underscore instead of space
+	 * Parse clause file and set clause values
 	 * @param path
-	 * @return Clause item
+	 * @return Clause 
 	 */
 	private static Clause clauseFromFile(String path) {
         Clause cl = new Clause(new ArrayList<ClauseItem>());
@@ -127,12 +133,7 @@ public class PPClient {
  
 				String line;
 				while ((line = reader.readLine()) != null) {
-					String tokens[] = line.split(" ");
-					if(tokens.length != 2)
-						throw new IOException("Invalid clause file");
-					CertType type = CertType.typeFromString(tokens[0]);
-					BigInteger val = new BigInteger(tokens[1]);
-					cl.addItem(new ClauseItem(type, val));
+					// DAN parse clause file and set cl here
 				}
         } catch (IOException e){
 			System.err.println("Error reading file "+path);
@@ -164,10 +165,11 @@ public class PPClient {
 
 			if(cmd.hasOption('p')){
 				opType  = OpType.POST;
-				if(!cmd.hasOption("pt") || !cmd.hasOption("cl"))
-					throw new ParseException("Must specify clause and plaintext files");
+				if(!cmd.hasOption("pt") || !cmd.hasOption("cl") || !cmd.hasOption("u"))
+					throw new ParseException("Must specify username, clause and plaintext files");
 				clause = clauseFromFile(cmd.getOptionValue("cl"));
 				ciphertext = strFromFile(cmd.getOptionValue("pt"));
+				userName = cmd.getOptionValue("u");
 				
 			}
 			else if (cmd.hasOption('g')){
@@ -234,6 +236,10 @@ public class PPClient {
 		Option CLAUSE = new Option("cl", "clause", true, "Clause to post");
 		REQ_ID.setArgName("clause");
 		options.addOption(CLAUSE);
+
+		Option USERNAME = new Option("u", "user", true, "Username");
+		REQ_ID.setArgName("username");
+		options.addOption(USERNAME);
 
 		options.addOptionGroup(OP_TYPE);
 
