@@ -1,12 +1,12 @@
-package server;
+package util;
 
-import util.Clause;
+import java.math.BigInteger;
 
 public class Entry {
     private Clause clause;
-    private String ciphertext;
+    private BigInteger ciphertext;
 
-    public Entry(Clause clause, String ciphertext) {
+    public Entry(Clause clause, BigInteger ciphertext) {
         this.clause = clause;
         this.ciphertext = ciphertext;
     }
@@ -14,7 +14,7 @@ public class Entry {
     public Clause getClause() {
         return clause;
     }
-    public String getCiphertext() {
+    public BigInteger getCiphertext() {
         return ciphertext;
     }
     

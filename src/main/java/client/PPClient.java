@@ -30,10 +30,11 @@ public class PPClient {
 
 	private UUID rid;
 	private List<Certificate> certs;
-	private String ciphertext;
+	private BigInteger ciphertext, plaintext;
 	private Clause clause;
 	private String userName;
     private Map<CertType, BigInteger> certKeys;
+	private ElgamalScheme elgamalScheme;
 
     public static void main(String[] args) {
 		System.setProperty("javax.net.ssl.trustStore", "src/main/resources/server.truststore");
@@ -60,17 +61,20 @@ public class PPClient {
 					 * Location for symmetric encryption of plaintext
 					 */
 					System.out.println("Requesting Elgamal key scheme...");
-					ElgamalScheme es = stub.requestScheme();
+					elgamalScheme = stub.requestScheme();
 					certKeys = stub.requestKeys(userName);
-					elgamalEncryptClause(es);
+					elgamalEncryptClause();
 					System.out.println("Requesting POST operation...");
 					result = stub.post(userName, clause, ciphertext);
 					System.out.println("Post successful! ID for posting is:");
 					System.out.println(result);
 					break;
 				case GET:
+					System.out.println("Requesting Elgamal key scheme...");
+					elgamalScheme = stub.requestScheme();
+					certKeys = stub.requestKeys(userName);
 					System.out.println("Requesting GET operation...");
-					result = stub.get(rid, certs);
+					result = stub.get(userName, rid, certs);
 					System.out.println(result);
 					break;
 				case DELETE:
@@ -88,12 +92,12 @@ public class PPClient {
 	 * Encrypt the clause values with Elgamal
 	 * @param es
 	 */
-	private void elgamalEncryptClause(ElgamalScheme es){
+	private void elgamalEncryptClause(){
 		for(ClauseItem item: clause.getClause()){
 			CertType type = item.getCertType();
 			BigInteger message = item.getVal();
 			BigInteger key = certKeys.get(type);
-			item.setVal(es.encrypt(key, message));
+			item.setVal(elgamalScheme.encrypt(key, message));
 		}
 	}
     private static String strFromFile(String path) {
@@ -159,7 +163,7 @@ public class PPClient {
      * @param message the error message to print
      */
     private void printUsage(String message){
-        new HelpFormatter().printHelp(100, "java client.IdClient ","\n", options, "\n" + message, true);
+        new HelpFormatter().printHelp(100, "java client.PPClient ","\n", options, "\n" + message, true);
 		System.exit(1);
     }
     /**
@@ -181,18 +185,18 @@ public class PPClient {
 				if(!cmd.hasOption("pt") || !cmd.hasOption("cl") || !cmd.hasOption("u"))
 					throw new ParseException("Must specify username, clause and plaintext files");
 				clause = clauseFromFile(cmd.getOptionValue("cl"));
-				ciphertext = strFromFile(cmd.getOptionValue("pt"));
+				plaintext = new BigInteger(strFromFile(cmd.getOptionValue("pt")));
 				userName = cmd.getOptionValue("u");
 				
 			}
 			else if (cmd.hasOption('g')){
 				opType = OpType.GET;
-				if(!cmd.hasOption("id") || !cmd.hasOption("ct"))
+				if(!cmd.hasOption("id") || !cmd.hasOption("ct") || !cmd.hasOption("u"))
 					throw new ParseException("Must specify request ID and certificate path");
 				
 				rid = UUID.fromString(cmd.getOptionValue("id"));
 				certs = certsFromFile(cmd.getOptionValue("ct"));
-				
+				userName = cmd.getOptionValue("u");
 			}
 			else if (cmd.hasOption('d'))
 				opType = OpType.DELETE;

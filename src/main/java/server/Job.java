@@ -1,6 +1,7 @@
 package server;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +32,10 @@ public abstract class Job {
 class PostJob extends Job {
     private UUID uuid;
     private Clause clause;
-    private String ciphertext;
+    private BigInteger ciphertext;
     private String user;
 
-    public PostJob(String user, Clause clause, String ciphertext){
+    public PostJob(String user, Clause clause, BigInteger ciphertext){
         super();
         this.uuid = UUID.randomUUID();
         this.clause = clause;
@@ -61,21 +62,76 @@ class PostJob extends Job {
 class GetEntryJob extends Job {
     private UUID uuid;
     private List<Certificate> userCerts;
+    private String user;
 
-    public GetEntryJob(UUID uuid, List<Certificate> certs){
+    public GetEntryJob(String user, UUID uuid, List<Certificate> certs){
         super();
         this.uuid = uuid;
         this.userCerts = certs;
     }
     @Override
-    public Object execute(
+    public Entry execute(
         Map<UUID, Entry> entries, 
         BigInteger K, 
         ElgamalScheme elgamalScheme, 
         Map<String, Map<CertType, BigInteger>> userTransKeys){
-            Entry entry = entries.get(uuid);
+            Entry storedEntry = entries.get(uuid);
+            Clause storedClause = storedEntry.getClause();
+            List<ClauseItem> storedItems = storedClause.getClause();
+            List<ClauseItem> validItems = new ArrayList<>();
 
-            return "GetJob Result";
+            // Match valid certs
+            for(Certificate userCert: userCerts){
+                CertType userType = userCert.getType();
+                for(ClauseItem item: storedItems){
+                    CertType storedType = item.getCertType();
+                    if(userType.equals(storedType)){
+                        ClauseItem clonedItem = new ClauseItem(storedType, item.getVal());
+                        validItems.add(clonedItem);
+                    }
+                }
+            }
+
+            // Re-encrypt valid items for user
+            for(ClauseItem item: validItems){
+                CertType type = item.getCertType();
+                BigInteger message = item.getVal();
+                BigInteger key = userTransKeys.get(user)
+                    .get(type);
+                item.setVal(elgamalScheme.encrypt(key, message));
+            }
+
+            // Blind
+            int n = validItems.size();
+            BigInteger p = elgamalScheme.getP();
+            BigInteger multiple = BigInteger.ONE;
+            BigInteger val;
+            List<BigInteger> blindingFactors = new ArrayList<>();
+            
+            // Generate n - 1 random numbers and multiply them 
+            for(int i=1; i<n; i++){
+                val = elgamalScheme.randomKey();
+                blindingFactors.add(val);
+                multiple.multiply(val).mod(p);
+            }
+
+            // Calc inverse
+            BigInteger inverse = multiple.modInverse(p);
+            blindingFactors.add(inverse);
+            
+            // For each valid item, encrypt a blinding factor and multiply it
+            for(ClauseItem item: validItems){
+                CertType type = item.getCertType();
+                BigInteger bf = blindingFactors.remove(0);
+                BigInteger key = userTransKeys.get(user)
+                    .get(type);
+                bf = elgamalScheme.encrypt(key, bf);
+                val = item.getVal()
+                    .multiply(bf)
+                    .mod(p);
+                item.setVal(val);
+            }
+            return new Entry(new Clause(validItems), storedEntry.getCiphertext());
     }
 }
 class GetKeysJob extends Job {

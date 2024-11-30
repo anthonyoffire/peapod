@@ -1,14 +1,14 @@
 package util;
-import java.util.ArrayList;
+import java.util.List;
 
 public class Clause {
-    private ArrayList<ClauseItem> clause;
+    private List<ClauseItem> clause;
 
-    public Clause(ArrayList<ClauseItem> clause) {
+    public Clause(List<ClauseItem> clause) {
         this.clause = clause;
     }
 
-    public ArrayList<ClauseItem> getClause() {
+    public List<ClauseItem> getClause() {
         return clause;
     }
     public void addItem(ClauseItem item){

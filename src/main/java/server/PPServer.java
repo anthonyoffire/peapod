@@ -94,20 +94,20 @@ public class PPServer implements Service {
 	 * adding more methods, also change them in Service.java
 	 */
 	@Override
-	public synchronized Object post(String name, Clause clause, String ciphertext) throws RemoteException {
+	public synchronized UUID post(String name, Clause clause, BigInteger ciphertext) throws RemoteException {
 		Job job = new PostJob(name, clause, ciphertext);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);
-		return getResult(jid);
+		return (UUID)getResult(jid);
 	}
 	@Override
-	public synchronized Object get(UUID id, List<Certificate> certs) throws RemoteException {
-		Job job = new GetEntryJob(id, certs);
+	public synchronized Entry get(String name, UUID id, List<Certificate> certs) throws RemoteException {
+		Job job = new GetEntryJob(name, id, certs);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);
-		return getResult(jid);
+		return (Entry)getResult(jid);
 	}
 	@Override
 	public synchronized Object delete() throws RemoteException {

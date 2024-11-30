@@ -24,6 +24,12 @@ public class ElgamalScheme {
         return message.multiply(pubk).mod(p);
     }
     public BigInteger randomKey(){
-        return new BigInteger(bitlen-1, new SecureRandom());
+        // Always returns a value from 2 to p-2
+        SecureRandom r = new SecureRandom();
+        BigInteger key;
+        do{
+            key = new BigInteger(bitlen-1, r);
+        } while (key.compareTo(BigInteger.TWO) < 0 || key.compareTo(p.subtract(BigInteger.TWO)) > 0);
+        return key;
     }
 }
