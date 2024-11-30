@@ -1,7 +1,5 @@
 package client;
 
-import org.apache.commons.cli.*;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -10,13 +8,32 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
-import util.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import elgamal.ElgamalScheme;
+import util.CertType;
+import util.Certificate;
+import util.Clause;
+import util.ClauseGroup;
+import util.ClauseItem;
+import util.LogicOpType;
+import util.OpType;
+import util.Service;
 
 public class PPClient {
     // Global vars
@@ -62,7 +79,10 @@ public class PPClient {
 					 */
 					System.out.println("Requesting Elgamal key scheme...");
 					elgamalScheme = stub.requestScheme();
+					System.out.println("Requesting Keys");
 					certKeys = stub.requestKeys(userName);
+					System.out.println("Getting Clause...");
+					clause = clauseFromFile(cmd.getOptionValue("cl"));
 					elgamalEncryptClause();
 					System.out.println("Requesting POST operation...");
 					result = stub.post(userName, clause, ciphertext);
@@ -142,19 +162,52 @@ public class PPClient {
 	 * @param path
 	 * @return Clause 
 	 */
-	private static Clause clauseFromFile(String path) {
+	private Clause clauseFromFile(String path) {
+		System.out.println("Getting clause from file...");
         Clause cl = new Clause(new ArrayList<ClauseItem>());
+		Map<Integer, ClauseGroup> groups = new HashMap<>();
         try (BufferedReader reader = 
 			new BufferedReader(
 			new FileReader(path))){  
- 
 				String line;
+				//read first line to get rid of header
+				reader.readLine();
 				while ((line = reader.readLine()) != null) {
-					// DAN parse clause file and set cl here
+					if (line.equals("end")) {
+						break;
+					}
+					String[] attributes = line.split(",");
+					CertType cert = CertType.typeFromString(attributes[0].trim());
+					int groupCode = 0;
+					try {
+						groupCode = Integer.parseInt(attributes[1].trim());
+					} catch (NumberFormatException e) {
+						System.err.println("Invalid group number format: " +attributes[1].trim());
+					}
+					LogicOpType logicOperationType = LogicOpType.typeFromString(attributes[2].trim());
+					int x;
+					if (logicOperationType == LogicOpType.XOFN) {
+						x = Integer.parseInt(attributes[3].trim());
+					}
+					if (groups.containsKey(groupCode)) {
+						ClauseGroup group = groups.get(groupCode);
+						group.addCertToGroup(cert);
+					} else {
+						groups.put(groupCode, new ClauseGroup(logicOperationType, cert));
+					}
 				}
         } catch (IOException e){
 			System.err.println("Error reading file "+path);
 			System.exit(1);
+		}
+		Set<Integer> FinalGroupCodes = new HashSet<>();
+		for (Integer key : groups.keySet()) {
+			ClauseGroup group = groups.get(key);
+			group.processGroup(cl, FinalGroupCodes, elgamalScheme);
+			System.out.println("Group: "+key+", ClauseGroup OP: "+group.getOperation()+", Certs: "+group.getCertList());
+		}
+		for (ClauseItem item : cl.getClause()) {
+			System.out.println("CertType: "+item.getCertType()+", Group Code: "+item.getGroupCode()+", Subkey: "+item.getVal());
 		}
         return cl;
     }
@@ -184,8 +237,9 @@ public class PPClient {
 				opType  = OpType.POST;
 				if(!cmd.hasOption("pt") || !cmd.hasOption("cl") || !cmd.hasOption("u"))
 					throw new ParseException("Must specify username, clause and plaintext files");
-				clause = clauseFromFile(cmd.getOptionValue("cl"));
+				System.out.println("Getting Plaintext...");
 				plaintext = new BigInteger(strFromFile(cmd.getOptionValue("pt")));
+				System.out.println("Getting Username...");
 				userName = cmd.getOptionValue("u");
 				
 			}

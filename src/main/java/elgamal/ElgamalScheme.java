@@ -58,7 +58,6 @@ public class ElgamalScheme {
             if (loops==100) {
                 return null;
             }
-
         } while (true);
     }
 }
