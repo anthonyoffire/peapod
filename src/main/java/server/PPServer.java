@@ -79,7 +79,7 @@ public class PPServer implements Service {
 			}
 			// Handle a job
 			Job job = jobQueue.poll();
-			Object result = job.execute(entries);
+			Object result = job.execute(entries, K, elgamalScheme, userTransKeys);
 			
 			jobResults.put(job.getJid(), result);
 			
@@ -103,7 +103,7 @@ public class PPServer implements Service {
 	}
 	@Override
 	public synchronized Object get(UUID id, List<Certificate> certs) throws RemoteException {
-		Job job = new GetJob();
+		Job job = new GetEntryJob(id, certs);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);
@@ -118,20 +118,13 @@ public class PPServer implements Service {
 		return getResult(jid);
 	}
 	@Override
+	@SuppressWarnings("unchecked");
 	public synchronized Map<CertType, BigInteger> requestKeys(String user) throws RemoteException {
-		Map<CertType, BigInteger> userKeys = new HashMap<>();
-		Map<CertType, BigInteger> transKeys = new HashMap<>();
-		BigInteger p = elgamalScheme.getP();
-		BigInteger userKey, transKey;
-
-		for(CertType type:CertType.values()){
-			userKey = elgamalScheme.randomKey();
-			transKey = K.subtract(userKey).mod(p.subtract(new BigInteger("1")));
-			userKeys.put(type, userKey);
-			transKeys.put(type, transKey);
-		}
-		userTransKeys.put(user,transKeys);
-		return userKeys;
+		Job job = new GetKeysJob(user);
+		int jid = job.getJid();
+		jobQueue.add(job);
+		waitForJob(jid);
+		return (Map<CertType, BigInteger>)getResult(jid);
 		
 	}
 	@Override

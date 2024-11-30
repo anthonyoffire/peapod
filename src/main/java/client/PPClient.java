@@ -65,6 +65,7 @@ public class PPClient {
 					elgamalEncryptClause(es);
 					System.out.println("Requesting POST operation...");
 					result = stub.post(clause, ciphertext);
+					System.out.println("Post successful! ID for posting is:");
 					System.out.println(result);
 					break;
 				case GET:

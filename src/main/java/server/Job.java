@@ -1,9 +1,13 @@
 package server;
 
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import elgamal.ElgamalScheme;
 import util.*;
 
 /* Functionality for all jobs */
@@ -16,8 +20,12 @@ public abstract class Job {
         return jid;
     };
     // execute: override this method
-    public Object execute(Map<UUID, Entry> entries){
-        return null;
+    public Object execute(
+        Map<UUID, Entry> entries, 
+        BigInteger K, 
+        ElgamalScheme elgamalScheme, 
+        Map<String, Map<CertType, BigInteger>> userTransKeys){
+            return null;
     };
 }
 class PostJob extends Job {
@@ -32,20 +40,60 @@ class PostJob extends Job {
         this.ciphertext = ciphertext;
     }
     @Override
-    public Object execute(Map<UUID, Entry> entries){
-        entries.put(uuid, new Entry(clause, ciphertext));
-        return uuid;
+    public Object execute(
+        Map<UUID, Entry> entries, 
+        BigInteger K, 
+        ElgamalScheme elgamalScheme, 
+        Map<String, Map<CertType, BigInteger>> userTransKeys){
+            entries.put(uuid, new Entry(clause, ciphertext));
+            return uuid;
     }
 }
-class GetJob extends Job {
+class GetEntryJob extends Job {
+    private UUID uuid;
+    private List<Certificate> userCerts;
 
-    public GetJob(){
+    public GetEntryJob(UUID uuid, List<Certificate> certs){
         super();
+        this.uuid = uuid;
+        this.userCerts = certs;
     }
     @Override
-    public Object execute(Map<UUID, Entry> entries){
-        /* GET FUNCTIONALITY GOES HERE */
-        return "GetJob Result";
+    public Object execute(
+        Map<UUID, Entry> entries, 
+        BigInteger K, 
+        ElgamalScheme elgamalScheme, 
+        Map<String, Map<CertType, BigInteger>> userTransKeys){
+            Entry entry = entries.get(uuid);
+
+            return "GetJob Result";
+    }
+}
+class GetKeysJob extends Job {
+    String name;
+    public GetKeysJob(String name){
+        super();
+        this.name = name;
+    }
+    @Override
+    public Map<CertType, BigInteger> execute(
+        Map<UUID, Entry> entries, 
+        BigInteger K, 
+        ElgamalScheme elgamalScheme, 
+        Map<String, Map<CertType, BigInteger>> userTransKeys){
+            Map<CertType, BigInteger> userKeys = new HashMap<>();
+		Map<CertType, BigInteger> transKeys = new HashMap<>();
+		BigInteger p = elgamalScheme.getP();
+		BigInteger userKey, transKey;
+
+		for(CertType type:CertType.values()){
+			userKey = elgamalScheme.randomKey();
+			transKey = K.subtract(userKey).mod(p.subtract(new BigInteger("1")));
+			userKeys.put(type, userKey);
+			transKeys.put(type, transKey);
+		}
+		userTransKeys.put(name,transKeys);
+		return userKeys;
     }
 }
 class DeleteJob extends Job {
@@ -54,8 +102,11 @@ class DeleteJob extends Job {
         super();
     }
     @Override
-    public Object execute(Map<UUID, Entry> entries){
-        /* DELETE FUNCTIONALITY GOES HERE */
-        return "DeleteJob Result";
+    public Object execute(Map<UUID, Entry> entries, 
+        BigInteger K, 
+        ElgamalScheme elgamalScheme, 
+        Map<String, Map<CertType, BigInteger>> userTransKeys){
+            /* DELETE FUNCTIONALITY GOES HERE */
+            return "DeleteJob Result";
     }
 }
