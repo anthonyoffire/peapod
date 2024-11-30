@@ -94,8 +94,8 @@ public class PPServer implements Service {
 	 * adding more methods, also change them in Service.java
 	 */
 	@Override
-	public synchronized Object post(Clause clause, String ciphertext) throws RemoteException {
-		Job job = new PostJob(clause, ciphertext);
+	public synchronized Object post(String name, Clause clause, String ciphertext) throws RemoteException {
+		Job job = new PostJob(name, clause, ciphertext);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);
@@ -118,7 +118,7 @@ public class PPServer implements Service {
 		return getResult(jid);
 	}
 	@Override
-	@SuppressWarnings("unchecked");
+	@SuppressWarnings("unchecked")
 	public synchronized Map<CertType, BigInteger> requestKeys(String user) throws RemoteException {
 		Job job = new GetKeysJob(user);
 		int jid = job.getJid();

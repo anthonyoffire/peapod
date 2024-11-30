@@ -64,7 +64,7 @@ public class PPClient {
 					certKeys = stub.requestKeys(userName);
 					elgamalEncryptClause(es);
 					System.out.println("Requesting POST operation...");
-					result = stub.post(clause, ciphertext);
+					result = stub.post(userName, clause, ciphertext);
 					System.out.println("Post successful! ID for posting is:");
 					System.out.println(result);
 					break;

@@ -14,7 +14,7 @@ import elgamal.ElgamalScheme;
  *
  */
 public interface Service extends Remote {
-	public Object post(Clause clause, String ciphertext) throws RemoteException;
+	public Object post(String name, Clause clause, String ciphertext) throws RemoteException;
 
 	public Object get(UUID id, List<Certificate> certs) throws RemoteException;
 

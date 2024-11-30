@@ -32,12 +32,14 @@ class PostJob extends Job {
     private UUID uuid;
     private Clause clause;
     private String ciphertext;
+    private String user;
 
-    public PostJob(Clause clause, String ciphertext){
+    public PostJob(String user, Clause clause, String ciphertext){
         super();
         this.uuid = UUID.randomUUID();
         this.clause = clause;
         this.ciphertext = ciphertext;
+        this.user = user;
     }
     @Override
     public Object execute(
@@ -45,6 +47,13 @@ class PostJob extends Job {
         BigInteger K, 
         ElgamalScheme elgamalScheme, 
         Map<String, Map<CertType, BigInteger>> userTransKeys){
+            for (ClauseItem item: clause.getClause()){
+                CertType type = item.getCertType();
+                BigInteger message = item.getVal();
+                BigInteger key = userTransKeys.get(user)
+                    .get(type);
+                item.setVal(elgamalScheme.encrypt(key, message));
+            }
             entries.put(uuid, new Entry(clause, ciphertext));
             return uuid;
     }
