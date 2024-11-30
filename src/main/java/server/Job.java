@@ -9,7 +9,11 @@ import java.util.Random;
 import java.util.UUID;
 
 import elgamal.ElgamalScheme;
-import util.*;
+import util.CertType;
+import util.Certificate;
+import util.Clause;
+import util.ClauseItem;
+import util.Entry;
 
 /* Functionality for all jobs */
 public abstract class Job {
@@ -86,7 +90,7 @@ class GetEntryJob extends Job {
                 for(ClauseItem item: storedItems){
                     CertType storedType = item.getCertType();
                     if(userType.equals(storedType)){
-                        ClauseItem clonedItem = new ClauseItem(storedType, item.getVal());
+                        ClauseItem clonedItem = new ClauseItem(storedType, item.getVal(), item.getGroupCode());
                         validItems.add(clonedItem);
                     }
                 }

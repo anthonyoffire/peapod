@@ -1,0 +1,14 @@
+CERTTYPE            GROUP       LOGIC       INFO
+male                  1          OR
+female                1          OR
+college_graduate      2          ANDNAND
+age_in_twenties       2          ANDNAND       
+smoker                3          XOFN       2
+pet_lover             3          XOFN       2
+hates_sand            3          XOFN       2
+
+end
+
+group number dictates which CERTTYPE belong to which LOGIC
+LOGIC dictates the policy logic for the group
+INFO provides the extra info needed by some groups, like what X is for XOFN
