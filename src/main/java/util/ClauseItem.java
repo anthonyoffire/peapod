@@ -17,4 +17,7 @@ public class ClauseItem {
     public BigInteger getVal() {
         return val;
     }
+    public void setVal(BigInteger newVal){
+        this.val = newVal;
+    }
 }

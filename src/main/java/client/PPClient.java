@@ -62,6 +62,7 @@ public class PPClient {
 					System.out.println("Requesting Elgamal key scheme...");
 					ElgamalScheme es = stub.requestScheme();
 					certKeys = stub.requestKeys(userName);
+					elgamalEncryptClause(es);
 					System.out.println("Requesting POST operation...");
 					result = stub.post(clause, ciphertext);
 					System.out.println(result);
@@ -82,7 +83,18 @@ public class PPClient {
 		}
 	
 	}
-	
+	/**
+	 * Encrypt the clause values with Elgamal
+	 * @param es
+	 */
+	private void elgamalEncryptClause(ElgamalScheme es){
+		for(ClauseItem item: clause.getClause()){
+			CertType type = item.getCertType();
+			BigInteger message = item.getVal();
+			BigInteger key = certKeys.get(type);
+			item.setVal(es.encrypt(key, message));
+		}
+	}
     private static String strFromFile(String path) {
         StringBuilder content = new StringBuilder();
         try (BufferedReader reader = 

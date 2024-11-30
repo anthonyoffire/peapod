@@ -19,9 +19,9 @@ public class ElgamalScheme {
     public BigInteger getP() {
         return p;
     }
-    public BigInteger encrypt(BigInteger key, BigInteger m){
+    public BigInteger encrypt(BigInteger key, BigInteger message){
         BigInteger pubk = g.modPow(key, p);
-        return m.multiply(pubk).mod(p);
+        return message.multiply(pubk).mod(p);
     }
     public BigInteger randomKey(){
         return new BigInteger(bitlen-1, new SecureRandom());
