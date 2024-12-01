@@ -156,17 +156,25 @@ public class PPClient {
 	 */
 	private void plaintextToFile(){
 		String filename = rid + ".out";
-        String bigIntegerString = plaintext.toString();
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
-            for (char c : bigIntegerString.toCharArray()) {
-                writer.write(c);
-            }
+            ptToFileRecursion(writer, plaintext);
         } catch (IOException e) {
 			System.err.println("Error writing plaintext to file "+filename);
             e.printStackTrace();
         }
 		System.out.println("Successfully wrote output to file: "+filename);
+	}
+	private void ptToFileRecursion(BufferedWriter writer, BigInteger num){
+		if(num.compareTo(BigInteger.ZERO) == 1){
+			BigInteger[] divRem = num.divideAndRemainder(BigInteger.valueOf(256));
+			ptToFileRecursion(writer, divRem[0]);
+			try {
+				writer.write((char)divRem[1].intValue());
+			} catch (IOException e) {
+				System.err.println("Failed writing char to plaintext file");
+			}
+		}
 	}
 	/**
 	 * Decrypt the clause values with Elgamal
