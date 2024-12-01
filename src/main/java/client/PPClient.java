@@ -1,7 +1,9 @@
 package client;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.rmi.NotBoundException;
@@ -30,6 +32,7 @@ import util.Certificate;
 import util.Clause;
 import util.ClauseGroup;
 import util.ClauseItem;
+import util.Entry;
 import util.LogicOpType;
 import util.OpType;
 import util.Service;
@@ -37,6 +40,7 @@ import util.Service;
 public class PPClient {
     // Global vars
     private final static String CLIENT_STUB_INTERFACE = "Service";
+	private final int AES_BITLEN = 256;
     private Service stub;
     private Options options;
     private CommandLine cmd;
@@ -52,6 +56,7 @@ public class PPClient {
     private Map<CertType, BigInteger> certKeys;
 	private ElgamalScheme elgamalScheme;
 	private BigInteger symmetricKey;
+	
 
     public static void main(String[] args) {
 		System.setProperty("javax.net.ssl.trustStore", "src/main/resources/server.truststore");
@@ -74,20 +79,18 @@ public class PPClient {
 			Object result;
 			switch(opType){
 				case POST:
-					/**
-					 * Location for symmetric encryption of plaintext
-					 */
 					System.out.println("Requesting Elgamal key scheme...");
 					elgamalScheme = stub.requestScheme();
-					System.out.println("Requesting Keys");
+					System.out.println("Requesting Keys...");
 					certKeys = stub.requestKeys(userName);
 					System.out.println("Getting Clause...");
 					clause = clauseFromFile(cmd.getOptionValue("cl"));
+					symmetricEncrypt();
 					elgamalEncryptClause();
 					System.out.println("Requesting POST operation...");
 					result = stub.post(userName, clause, ciphertext);
 					System.out.println("Post successful! ID for posting is:");
-					System.out.println(result);
+					System.out.println((UUID)result);
 					break;
 				case GET:
 					System.out.println("Requesting Elgamal key scheme...");
@@ -95,7 +98,11 @@ public class PPClient {
 					certKeys = stub.requestKeys(userName);
 					System.out.println("Requesting GET operation...");
 					result = stub.get(userName, rid, certs);
-					System.out.println(result);
+					clause = ((Entry)result).getClause();
+					ciphertext = ((Entry)result).getCiphertext();
+					elgamalDecryptClause();
+					symmetricDecryptClause();
+					plaintextToFile();
 					break;
 				case DELETE:
 					System.out.println("Requesting DELETE operation...");
@@ -107,6 +114,63 @@ public class PPClient {
 			System.err.println(e);
 		}
 	
+	}
+	/**
+	 * Encrypt plaintext -> AES -> ciphertext
+	 */
+	private void symmetricEncrypt(){
+
+	}
+	/**
+	 * Decrypt clause into BigInt plaintext
+	 */
+	private void symmetricDecryptClause(){
+		symmetricKey = BigInteger.ONE;
+		BigInteger p = elgamalScheme.getP();
+		Set<Integer> groupCodes = new HashSet<>();
+
+		// Find symmetric key
+		for(ClauseItem item: clause.getClause()){
+			int groupCode = item.getGroupCode();
+			// Only process one item per group code
+			if(!groupCodes.contains(groupCode)){
+				groupCodes.add(groupCode);
+				symmetricKey = symmetricKey.multiply(item.getVal()).mod(p);
+			}
+		}
+		symmetricKey = symmetricKey.mod((BigInteger.TWO).pow(AES_BITLEN));
+
+		// Decrypt ciphertext
+		
+	}
+	/**
+	 * plaintextToFile: output the (already found) plaintext
+	 */
+	private void plaintextToFile(){
+		String filename = rid + ".txt";
+        String bigIntegerString = plaintext.toString();
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            for (char c : bigIntegerString.toCharArray()) {
+                writer.write(c);
+            }
+        } catch (IOException e) {
+			System.err.println("Error writing plaintext to file "+filename);
+            e.printStackTrace();
+        }
+		System.out.println("Successfully wrote output to file: "+filename);
+	}
+	/**
+	 * Decrypt the clause values with Elgamal
+	 */
+	private void elgamalDecryptClause(){
+		BigInteger message, key;
+		for(ClauseItem item: clause.getClause()){
+			CertType type = item.getCertType();
+			message = item.getVal();
+			key = certKeys.get(type);
+			item.setVal(elgamalScheme.decrypt(key, message));
+		}
 	}
 	/**
 	 * Encrypt the clause values with Elgamal
@@ -219,8 +283,8 @@ public class PPClient {
 		for (ClauseItem item : cl.getClause()) {
 			System.out.println("CertType: "+item.getCertType()+", Group Code: "+item.getGroupCode()+", Subkey: "+item.getVal());
 		}
-		// TODO also put symmetric key somewhere?
-		this.symmetricKey = symKey;
+		// mod to valid symmetric key length
+		this.symmetricKey = symKey.mod((BigInteger.TWO).pow(AES_BITLEN));
         return cl;
     }
     /**
@@ -304,7 +368,7 @@ public class PPClient {
 		DELETE.setArgName("delete");
 		OP_TYPE.addOption(DELETE);
 
-		Option CREDENTIALS = new Option("c", "cred", true, "Specify user credential file");
+		Option CREDENTIALS = new Option("ct", "cred", true, "Specify user credential file");
 		CREDENTIALS.setArgName("cred");
 		options.addOption(CREDENTIALS);
 

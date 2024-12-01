@@ -21,6 +21,11 @@ public class ElgamalScheme implements Serializable{
     public BigInteger getP() {
         return p;
     }
+    public BigInteger decrypt(BigInteger privkey, BigInteger ciphertext){
+        BigInteger pubkey = g.modPow(privkey, p);
+		BigInteger inverse = pubkey.modInverse(p);
+        return ciphertext.multiply(inverse).mod(p);
+    }
     public BigInteger encrypt(BigInteger key, BigInteger message){
         BigInteger pubk = g.modPow(key, p);
         return message.multiply(pubk).mod(p);

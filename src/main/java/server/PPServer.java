@@ -95,7 +95,6 @@ public class PPServer implements Service {
 	 */
 	@Override
 	public synchronized UUID post(String name, Clause clause, BigInteger ciphertext) throws RemoteException {
-		System.out.println("post method entered");
 		Job job = new PostJob(name, clause, ciphertext);
 		int jid = job.getJid();
 		jobQueue.add(job);
