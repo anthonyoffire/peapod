@@ -1,0 +1,4 @@
+CERTTYPE, GROUP, LOGIC, INFO
+female, 1, ANDNAND
+hates_sand, 2, ANDNAND
+end

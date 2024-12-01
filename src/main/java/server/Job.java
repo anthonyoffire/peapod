@@ -3,9 +3,11 @@ package server;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import encryption.ElgamalScheme;
@@ -84,6 +86,8 @@ class GetEntryJob extends Job {
         ElgamalScheme elgamalScheme, 
         Map<String, Map<CertType, BigInteger>> userTransKeys){
             Entry storedEntry = entries.get(uuid);
+            if(storedEntry == null)
+                return null;
             Clause storedClause = storedEntry.getClause();
             List<ClauseItem> storedItems = storedClause.getClause();
             List<ClauseItem> validItems = new ArrayList<>();
@@ -109,8 +113,21 @@ class GetEntryJob extends Job {
                 item.setVal(elgamalScheme.encrypt(key, message));
             }
 
-            // Blind
-            int n = validItems.size();
+            /**
+             * Blind
+             */
+
+            int n, groupCode;
+            Set<Integer> groups = new HashSet<>();
+
+            // Count number of distinct bf's we need
+            for(ClauseItem item: validItems){
+                groupCode = item.getGroupCode();
+                if(!groups.contains(groupCode))
+                    groups.add(groupCode);
+            }
+            n = groups.size();
+
             BigInteger p = elgamalScheme.getP();
             BigInteger multiple = BigInteger.ONE;
             BigInteger val;
@@ -128,10 +145,18 @@ class GetEntryJob extends Job {
             blindingFactors.add(inverse);
             
             // For each valid item, encrypt a blinding factor and multiply it
+            // 1 bf per group code
+            Map<Integer, BigInteger> bfMap = new HashMap<>();
+            BigInteger bf, key;
+            CertType type;
             for(ClauseItem item: validItems){
-                CertType type = item.getCertType();
-                BigInteger bf = blindingFactors.remove(0);
-                BigInteger key = userTransKeys.get(user)
+                groupCode = item.getGroupCode();
+                type = item.getCertType();
+
+                if(!bfMap.containsKey(groupCode))
+                    bfMap.put(groupCode, blindingFactors.remove(0));
+                bf = bfMap.get(groupCode);
+                key = userTransKeys.get(user)
                     .get(type);
                 bf = elgamalScheme.encrypt(key, bf);
                 val = item.getVal()
@@ -154,19 +179,22 @@ class GetKeysJob extends Job {
         BigInteger K, 
         ElgamalScheme elgamalScheme, 
         Map<String, Map<CertType, BigInteger>> userTransKeys){
-            Map<CertType, BigInteger> userKeys = new HashMap<>();
-		Map<CertType, BigInteger> transKeys = new HashMap<>();
-		BigInteger p = elgamalScheme.getP();
-		BigInteger userKey, transKey;
 
-		for(CertType type:CertType.values()){
-			userKey = elgamalScheme.randomKey();
-			transKey = K.subtract(userKey).mod(p.subtract(new BigInteger("1")));
-			userKeys.put(type, userKey);
-			transKeys.put(type, transKey);
-		}
-		userTransKeys.put(name,transKeys);
-		return userKeys;
+            Map<CertType, BigInteger> userKeys = new HashMap<>();
+            Map<CertType, BigInteger> transKeys = new HashMap<>();
+            BigInteger p = elgamalScheme.getP();
+            BigInteger userKey, transKey;
+            
+            if(userTransKeys.containsKey(name))
+                userTransKeys.remove(name);
+            for(CertType type:CertType.values()){
+                userKey = elgamalScheme.randomKey();
+                transKey = K.subtract(userKey).mod(p.subtract(new BigInteger("1")));
+                userKeys.put(type, userKey);
+                transKeys.put(type, transKey);
+            }
+            userTransKeys.put(name,transKeys);
+            return userKeys;
     }
 }
 class DeleteJob extends Job {

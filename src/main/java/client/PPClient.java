@@ -91,9 +91,17 @@ public class PPClient {
 					certKeys = stub.requestKeys(userName);
 					System.out.println("Requesting GET operation...");
 					result = stub.get(userName, rid, certs);
+					if(result == null){
+						System.err.println("No item was found for uuid: "+rid);
+						System.exit(1);
+					}
 					Entry entry = (Entry) result;
 					symScheme = entry.getSymScheme();
 					clause = entry.getClause();
+					if(clause.getClause().size() == 0){
+						System.err.println("You do not have any valid credentials for this posting.");
+						System.exit(1);
+					}
 					ciphertext = entry.getCiphertext();
 					elgamalDecryptClause();
 					symmetricDecryptClause();
@@ -132,6 +140,7 @@ public class PPClient {
 			if(!groupCodes.contains(groupCode)){
 				groupCodes.add(groupCode);
 				symmetricKey = symmetricKey.multiply(item.getVal()).mod(p);
+				System.out.println("key-piece: "+item.getVal());
 			}
 		}
 		symmetricKey = symmetricKey.mod((BigInteger.TWO).pow(AES_BITLEN));
@@ -161,6 +170,7 @@ public class PPClient {
 	 */
 	private void elgamalDecryptClause(){
 		BigInteger message, key;
+		System.out.println("clause len: "+clause.getClause().size());
 		for(ClauseItem item: clause.getClause()){
 			CertType type = item.getCertType();
 			message = item.getVal();
@@ -212,6 +222,9 @@ public class PPClient {
 							certs.add(new Certificate(type));
 					}
 				}
+				if(certs.size() == 0)
+					throw new IOException("You don't have any certifications");
+				System.out.println("You have "+certs.size()+" certifications");
         } catch (IOException e){
 			System.err.println("Error reading file "+path);
 			System.exit(1);
