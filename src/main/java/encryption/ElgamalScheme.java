@@ -1,4 +1,4 @@
-package elgamal;
+package encryption;
 
 import java.io.Serializable;
 import java.math.BigInteger;

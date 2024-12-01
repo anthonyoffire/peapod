@@ -7,14 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import elgamal.ElgamalScheme;
+import encryption.*;
 
 /**
  * Service: Interface to define RMI methods
  *
  */
 public interface Service extends Remote {
-	public UUID post(String name, Clause clause, BigInteger ciphertext) throws RemoteException;
+	public UUID post(String name, Clause clause, BigInteger ciphertext, SymScheme symScheme) throws RemoteException;
 
 	public Entry get(String name, UUID id, List<Certificate> certs) throws RemoteException;
 

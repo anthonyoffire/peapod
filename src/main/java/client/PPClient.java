@@ -26,21 +26,13 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import elgamal.ElgamalScheme;
-import util.CertType;
-import util.Certificate;
-import util.Clause;
-import util.ClauseGroup;
-import util.ClauseItem;
-import util.Entry;
-import util.LogicOpType;
-import util.OpType;
-import util.Service;
+import encryption.*;
+import util.*;
 
 public class PPClient {
     // Global vars
     private final static String CLIENT_STUB_INTERFACE = "Service";
-	private final int AES_BITLEN = 256;
+	private final int AES_BITLEN = 127;
     private Service stub;
     private Options options;
     private CommandLine cmd;
@@ -56,6 +48,7 @@ public class PPClient {
     private Map<CertType, BigInteger> certKeys;
 	private ElgamalScheme elgamalScheme;
 	private BigInteger symmetricKey;
+	private SymScheme symScheme;
 	
 
     public static void main(String[] args) {
@@ -88,7 +81,7 @@ public class PPClient {
 					symmetricEncrypt();
 					elgamalEncryptClause();
 					System.out.println("Requesting POST operation...");
-					result = stub.post(userName, clause, ciphertext);
+					result = stub.post(userName, clause, ciphertext, symScheme);
 					System.out.println("Post successful! ID for posting is:");
 					System.out.println((UUID)result);
 					break;
@@ -98,8 +91,10 @@ public class PPClient {
 					certKeys = stub.requestKeys(userName);
 					System.out.println("Requesting GET operation...");
 					result = stub.get(userName, rid, certs);
-					clause = ((Entry)result).getClause();
-					ciphertext = ((Entry)result).getCiphertext();
+					Entry entry = (Entry) result;
+					symScheme = entry.getSymScheme();
+					clause = entry.getClause();
+					ciphertext = entry.getCiphertext();
 					elgamalDecryptClause();
 					symmetricDecryptClause();
 					plaintextToFile();
@@ -119,7 +114,8 @@ public class PPClient {
 	 * Encrypt plaintext -> AES -> ciphertext
 	 */
 	private void symmetricEncrypt(){
-
+		symScheme = new SymScheme(AES_BITLEN);
+		ciphertext = symScheme.encrypt(plaintext, symmetricKey);
 	}
 	/**
 	 * Decrypt clause into BigInt plaintext
@@ -141,7 +137,7 @@ public class PPClient {
 		symmetricKey = symmetricKey.mod((BigInteger.TWO).pow(AES_BITLEN));
 
 		// Decrypt ciphertext
-		
+		plaintext = symScheme.decrypt(ciphertext, symmetricKey);
 	}
 	/**
 	 * plaintextToFile: output the (already found) plaintext

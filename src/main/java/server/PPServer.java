@@ -20,7 +20,8 @@ import javax.rmi.ssl.SslRMIServerSocketFactory;
 
 import org.apache.commons.cli.*;
 
-import elgamal.ElgamalScheme;
+import encryption.ElgamalScheme;
+import encryption.SymScheme;
 import util.*;
 
 /**
@@ -94,8 +95,8 @@ public class PPServer implements Service {
 	 * adding more methods, also change them in Service.java
 	 */
 	@Override
-	public synchronized UUID post(String name, Clause clause, BigInteger ciphertext) throws RemoteException {
-		Job job = new PostJob(name, clause, ciphertext);
+	public synchronized UUID post(String name, Clause clause, BigInteger ciphertext, SymScheme symScheme) throws RemoteException {
+		Job job = new PostJob(name, clause, ciphertext, symScheme);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);

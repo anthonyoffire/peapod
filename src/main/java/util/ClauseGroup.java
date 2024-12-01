@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import elgamal.ElgamalScheme;
+import encryption.ElgamalScheme;
 
 public class ClauseGroup {
     private LogicOpType operation;

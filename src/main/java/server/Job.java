@@ -8,7 +8,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-import elgamal.ElgamalScheme;
+import encryption.ElgamalScheme;
+import encryption.SymScheme;
 import util.CertType;
 import util.Certificate;
 import util.Clause;
@@ -38,13 +39,16 @@ class PostJob extends Job {
     private Clause clause;
     private BigInteger ciphertext;
     private String user;
+    private SymScheme symScheme;
+    
 
-    public PostJob(String user, Clause clause, BigInteger ciphertext){
+    public PostJob(String user, Clause clause, BigInteger ciphertext, SymScheme symScheme){
         super();
         this.uuid = UUID.randomUUID();
         this.clause = clause;
         this.ciphertext = ciphertext;
         this.user = user;
+        this.symScheme = symScheme;
     }
     @Override
     public Object execute(
@@ -59,7 +63,7 @@ class PostJob extends Job {
                     .get(type);
                 item.setVal(elgamalScheme.encrypt(key, message));
             }
-            entries.put(uuid, new Entry(clause, ciphertext));
+            entries.put(uuid, new Entry(clause, ciphertext, symScheme));
             return uuid;
     }
 }
@@ -135,7 +139,7 @@ class GetEntryJob extends Job {
                     .mod(p);
                 item.setVal(val);
             }
-            return new Entry(new Clause(validItems), storedEntry.getCiphertext());
+            return new Entry(new Clause(validItems), storedEntry.getCiphertext(), storedEntry.getSymScheme());
     }
 }
 class GetKeysJob extends Job {
