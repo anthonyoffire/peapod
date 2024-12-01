@@ -95,20 +95,20 @@ public class PPServer implements Service {
 	 * adding more methods, also change them in Service.java
 	 */
 	@Override
-	public synchronized UUID post(String name, Clause clause, BigInteger ciphertext, SymScheme symScheme) throws RemoteException {
+	public synchronized Object post(String name, Clause clause, BigInteger ciphertext, SymScheme symScheme) throws RemoteException {
 		Job job = new PostJob(name, clause, ciphertext, symScheme);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);
-		return (UUID)getResult(jid);
+		return getResult(jid);
 	}
 	@Override
-	public synchronized Entry get(String name, UUID id, List<Certificate> certs) throws RemoteException {
+	public synchronized Object get(String name, UUID id, List<Certificate> certs) throws RemoteException {
 		Job job = new GetEntryJob(name, id, certs);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);
-		return (Entry)getResult(jid);
+		return getResult(jid);
 	}
 	@Override
 	public synchronized Object delete() throws RemoteException {
@@ -119,13 +119,12 @@ public class PPServer implements Service {
 		return getResult(jid);
 	}
 	@Override
-	@SuppressWarnings("unchecked")
-	public synchronized Map<CertType, BigInteger> requestKeys(String user) throws RemoteException {
+	public synchronized Object requestKeys(String user) throws RemoteException {
 		Job job = new GetKeysJob(user);
 		int jid = job.getJid();
 		jobQueue.add(job);
 		waitForJob(jid);
-		return (Map<CertType, BigInteger>)getResult(jid);
+		return getResult(jid);
 		
 	}
 	@Override

@@ -52,11 +52,14 @@ public class SymScheme implements Serializable{
             cipher.init(Cipher.DECRYPT_MODE, ckey, ivSpec);
             byte[] plainBytes = cipher.doFinal(ciphertext.toByteArray());
             return new BigInteger(plainBytes);
-        } catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException | NoSuchPaddingException e) {
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | NoSuchAlgorithmException | NoSuchPaddingException e) {
             System.err.println("Failed to decrypt with AES");
             e.printStackTrace();
             System.exit(1);
-        } 
+        } catch (BadPaddingException e){
+            System.err.println("Key does not match and caused a padding exception :x");
+            System.exit(1);
+        }
         return null;
     }
     public int getBitLen(){

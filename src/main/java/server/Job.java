@@ -33,7 +33,7 @@ public abstract class Job {
         BigInteger K, 
         ElgamalScheme elgamalScheme, 
         Map<String, Map<CertType, BigInteger>> userTransKeys){
-            return null;
+            return 1;
     };
 }
 class PostJob extends Job {
@@ -78,20 +78,20 @@ class GetEntryJob extends Job {
         super();
         this.uuid = uuid;
         this.userCerts = certs;
+        this.user = user;
     }
     @Override
-    public Entry execute(
+    public Object execute(
         Map<UUID, Entry> entries, 
         BigInteger K, 
         ElgamalScheme elgamalScheme, 
         Map<String, Map<CertType, BigInteger>> userTransKeys){
             Entry storedEntry = entries.get(uuid);
             if(storedEntry == null)
-                return null;
+                return 1;
             Clause storedClause = storedEntry.getClause();
             List<ClauseItem> storedItems = storedClause.getClause();
             List<ClauseItem> validItems = new ArrayList<>();
-
             // Match valid certs
             for(Certificate userCert: userCerts){
                 CertType userType = userCert.getType();
@@ -103,7 +103,11 @@ class GetEntryJob extends Job {
                     }
                 }
             }
-
+            if(userTransKeys.get(user) == null){
+                System.out.println("[server] - user "+user+" is not registered");
+                return 1;
+            }
+            
             // Re-encrypt valid items for user
             for(ClauseItem item: validItems){
                 CertType type = item.getCertType();
@@ -132,7 +136,6 @@ class GetEntryJob extends Job {
             BigInteger multiple = BigInteger.ONE;
             BigInteger val;
             List<BigInteger> blindingFactors = new ArrayList<>();
-            
             // Generate n - 1 random numbers and multiply them 
             for(int i=1; i<n; i++){
                 val = elgamalScheme.randomKey();
@@ -164,6 +167,7 @@ class GetEntryJob extends Job {
                     .mod(p);
                 item.setVal(val);
             }
+            System.out.println("job4");
             return new Entry(new Clause(validItems), storedEntry.getCiphertext(), storedEntry.getSymScheme());
     }
 }
@@ -174,7 +178,7 @@ class GetKeysJob extends Job {
         this.name = name;
     }
     @Override
-    public Map<CertType, BigInteger> execute(
+    public Object execute(
         Map<UUID, Entry> entries, 
         BigInteger K, 
         ElgamalScheme elgamalScheme, 
@@ -184,7 +188,7 @@ class GetKeysJob extends Job {
             Map<CertType, BigInteger> transKeys = new HashMap<>();
             BigInteger p = elgamalScheme.getP();
             BigInteger userKey, transKey;
-            
+
             if(userTransKeys.containsKey(name))
                 userTransKeys.remove(name);
             for(CertType type:CertType.values()){
@@ -193,7 +197,10 @@ class GetKeysJob extends Job {
                 userKeys.put(type, userKey);
                 transKeys.put(type, transKey);
             }
+            
             userTransKeys.put(name,transKeys);
+            if(userTransKeys.get(name) == null)
+                System.out.println("[server] - failed to add user "+name);
             return userKeys;
     }
 }

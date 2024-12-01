@@ -62,6 +62,7 @@ public class PPClient {
     /**
      * run: send post/req to server
      */
+	 @SuppressWarnings("unchecked")
     private void run(String args[]){
 		parseArgs(args);
         try{
@@ -73,9 +74,9 @@ public class PPClient {
 			switch(opType){
 				case POST:
 					System.out.println("Requesting Elgamal key scheme...");
-					elgamalScheme = stub.requestScheme();
+					elgamalScheme = (ElgamalScheme)stub.requestScheme();
 					System.out.println("Requesting Keys...");
-					certKeys = stub.requestKeys(userName);
+					certKeys = (Map<CertType, BigInteger>)stub.requestKeys(userName);
 					System.out.println("Getting Clause...");
 					clause = clauseFromFile(cmd.getOptionValue("cl"));
 					symmetricEncrypt();
@@ -87,11 +88,11 @@ public class PPClient {
 					break;
 				case GET:
 					System.out.println("Requesting Elgamal key scheme...");
-					elgamalScheme = stub.requestScheme();
-					certKeys = stub.requestKeys(userName);
+					elgamalScheme = (ElgamalScheme)stub.requestScheme();
+					certKeys = (Map<CertType,BigInteger>)stub.requestKeys(userName);
 					System.out.println("Requesting GET operation...");
 					result = stub.get(userName, rid, certs);
-					if(result == null){
+					if(result.equals(1)){
 						System.err.println("No item was found for uuid: "+rid);
 						System.exit(1);
 					}
@@ -293,7 +294,9 @@ public class PPClient {
 			System.out.println("CertType: "+item.getCertType()+", Group Code: "+item.getGroupCode()+", Subkey: "+item.getVal());
 		}
 		// mod to valid symmetric key length
+		System.out.println("symkey: "+symKey);
 		this.symmetricKey = symKey.mod((BigInteger.TWO).pow(AES_BITLEN));
+		System.out.println("modsymkey: "+symmetricKey);
         return cl;
     }
     /**
