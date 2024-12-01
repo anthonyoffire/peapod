@@ -121,6 +121,26 @@ public class ClauseGroup {
                     clause.addItem(item);
                 }
                 return total_key;
+            case NA:
+                // for NA each cert in the group should have their own subkey and group
+                BigInteger subkey_na = BigInteger.valueOf(-1);
+                if (this.certList.size() != 1) {
+                    System.err.println("ERROR: NA group has more than 1 cert, make NA attributes different group numbers");
+                    return subkey_na;
+                }
+                for (CertType cert : this.certList) {
+                    subkey_na = scheme.randomKey();
+                    int code3;
+                    do {
+                        code3 = r.nextInt();
+                    } while (groupCodes.contains(code3));
+                    // add group code to list of group codes so we don't use it again
+                    groupCodes.add(code3);
+                    // add clause item to final clause
+                    ClauseItem item = new ClauseItem(cert, subkey_na, code3);
+                    clause.addItem(item);
+                }
+                return subkey_na;
             default:
                 return BigInteger.valueOf(-1);
         }
