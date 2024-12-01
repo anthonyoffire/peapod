@@ -26,3 +26,9 @@ To kill server:
 ```console
   ./killServer.sh
 ```
+## Code References
+1. One of Anthony's old projects for the client/server RMI setup
+   
+3. https://encryption-decryption.mojoauth.com/elgamal-variable-key-size-encryption--java/
+
+4. https://www.baeldung.com/java-aes-encryption-decryption
