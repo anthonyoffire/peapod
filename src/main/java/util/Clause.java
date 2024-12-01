@@ -28,7 +28,7 @@ public class Clause implements Serializable{
     public BigInteger getValFromCert(CertType cert) {
         for (ClauseItem item : this.clause) {
             if (item.getCertType() == cert) {
-                return item.getVal();
+                return item.getCipherPair()[1];
             }
         }
         return null;

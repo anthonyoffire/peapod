@@ -55,7 +55,10 @@ public class ClauseGroup {
                     // add group code to list of group codes so we don't use it again
                     groupCodes.add(code);
                     // add clause item to final clause
-                    ClauseItem item = new ClauseItem(cert, subkey_xor, code);
+                    ClauseItem item = new ClauseItem(
+                        cert, 
+                        new BigInteger[]{BigInteger.ONE, subkey_xor}, 
+                        code);
                     clause.addItem(item);
                 }
                 return subkey_xor;
@@ -85,7 +88,10 @@ public class ClauseGroup {
                     } while (groupCodes.contains(code));
                     // add group code to list of group codes so we don't use it again
                     groupCodes.add(code);
-                    ClauseItem item = new ClauseItem(this.certList.get(i), subkey_andnand, code);
+                    ClauseItem item = new ClauseItem(
+                        this.certList.get(i), 
+                        new BigInteger[]{BigInteger.ONE, subkey_andnand}, 
+                        code);
                     clause.addItem(item);
                 }
                 assert runningTotal.equals(BigInteger.ONE) : "ANDNAND: keys do not multiply to 1 mod p despite finding inverse";
@@ -101,7 +107,10 @@ public class ClauseGroup {
                 groupCodes.add(code);
                 for (CertType cert : this.certList) {
                     // add clause item to final clause
-                    ClauseItem item = new ClauseItem(cert, subkey_or, code);
+                    ClauseItem item = new ClauseItem(
+                        cert, 
+                        new BigInteger[]{BigInteger.ONE, subkey_or}, 
+                        code);
                     clause.addItem(item);
                 }
                 return subkey_or;
@@ -117,7 +126,10 @@ public class ClauseGroup {
                     // add group code to list of group codes so we don't use it again
                     groupCodes.add(code2);
                     // add clause item to final clause
-                    ClauseItem item = new ClauseItem(cert, subkey_xofn, code2);
+                    ClauseItem item = new ClauseItem(
+                        cert, 
+                        new BigInteger[]{BigInteger.ONE, subkey_xofn}, 
+                        code2);
                     clause.addItem(item);
                 }
                 return total_key;
@@ -137,7 +149,10 @@ public class ClauseGroup {
                     // add group code to list of group codes so we don't use it again
                     groupCodes.add(code3);
                     // add clause item to final clause
-                    ClauseItem item = new ClauseItem(cert, subkey_na, code3);
+                    ClauseItem item = new ClauseItem(
+                        cert, 
+                        new BigInteger[]{BigInteger.ONE, subkey_na}, 
+                        code3);
                     clause.addItem(item);
                 }
                 return subkey_na;

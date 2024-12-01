@@ -24,14 +24,38 @@ public class ElgamalScheme implements Serializable{
     public BigInteger getP() {
         return p;
     }
-    public BigInteger decrypt(BigInteger privkey, BigInteger ciphertext){
-        BigInteger pubkey = g.modPow(privkey, p);
+    public BigInteger decrypt(BigInteger[] cipherpair){
+        BigInteger pubkey = cipherpair[0];
 		BigInteger inverse = pubkey.modInverse(p);
-        return ciphertext.multiply(inverse).mod(p);
+        return cipherpair[1].multiply(inverse).mod(p);
     }
-    public BigInteger encrypt(BigInteger key, BigInteger message){
-        BigInteger pubk = g.modPow(key, p);
-        return message.multiply(pubk).mod(p);
+    public BigInteger[] encrypt(BigInteger privkey, BigInteger message){
+        BigInteger pubk = g.modPow(privkey, p);
+        return new BigInteger[]{
+            pubk, 
+            message.multiply(pubk).mod(p)
+        };
+    }
+    public BigInteger[] reEncrypt(BigInteger privkey, BigInteger[] cipherpair){
+        BigInteger pubk = g.modPow(privkey, p);
+        return new BigInteger[]{
+            cipherpair[0].multiply(pubk).mod(p),
+            cipherpair[1].multiply(pubk).mod(p)
+        };
+    }
+    public BigInteger[] preDecrypt(BigInteger privkey, BigInteger[] cipherpair){
+        BigInteger pubk = g.modPow(privkey, p);
+        BigInteger inverse = pubk.modInverse(p);
+        return new BigInteger[]{
+            cipherpair[0].multiply(inverse).mod(p),
+            cipherpair[1].multiply(inverse).mod(p)
+        };
+    }
+    public BigInteger[] homomorphicMultiply(BigInteger[] pair1, BigInteger[] pair2){
+        return new BigInteger[]{
+            pair1[0].multiply(pair2[0]).mod(p),
+            pair1[1].multiply(pair2[1]).mod(p)
+        };
     }
     public BigInteger randomKey(){
         // Always returns a value from 2 to p-2

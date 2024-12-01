@@ -137,11 +137,13 @@ public class PPClient {
 		// Find symmetric key
 		for(ClauseItem item: clause.getClause()){
 			int groupCode = item.getGroupCode();
+			BigInteger val;
 			// Only process one item per group code
 			if(!groupCodes.contains(groupCode)){
 				groupCodes.add(groupCode);
-				symmetricKey = symmetricKey.multiply(item.getVal()).mod(p);
-				System.out.println("key-piece: "+item.getVal());
+				val = item.getCipherPair()[1];
+				symmetricKey = symmetricKey.multiply(val).mod(p);
+				System.out.println("key-piece: "+val);
 			}
 		}
 		symmetricKey = symmetricKey.mod((BigInteger.TWO).pow(AES_BITLEN));
@@ -170,13 +172,12 @@ public class PPClient {
 	 * Decrypt the clause values with Elgamal
 	 */
 	private void elgamalDecryptClause(){
-		BigInteger message, key;
-		System.out.println("clause len: "+clause.getClause().size());
+		BigInteger[] cipherpair;
 		for(ClauseItem item: clause.getClause()){
-			CertType type = item.getCertType();
-			message = item.getVal();
-			key = certKeys.get(type);
-			item.setVal(elgamalScheme.decrypt(key, message));
+			cipherpair = item.getCipherPair();
+			item.setCipherPair(new BigInteger[]{
+				BigInteger.ONE,
+				elgamalScheme.decrypt(cipherpair)});
 		}
 	}
 	/**
@@ -186,9 +187,9 @@ public class PPClient {
 	private void elgamalEncryptClause(){
 		for(ClauseItem item: clause.getClause()){
 			CertType type = item.getCertType();
-			BigInteger message = item.getVal();
+			BigInteger message = item.getCipherPair()[1];
 			BigInteger key = certKeys.get(type);
-			item.setVal(elgamalScheme.encrypt(key, message));
+			item.setCipherPair(elgamalScheme.encrypt(key, message));
 		}
 	}
     private static BigInteger bigIntFromFile(String path) {
@@ -291,7 +292,7 @@ public class PPClient {
 			System.out.println("Group: "+key+", ClauseGroup OP: "+group.getOperation()+", Certs: "+group.getCertList()+", Num Required (XOFN): "+group.getNumRequired());
 		}
 		for (ClauseItem item : cl.getClause()) {
-			System.out.println("CertType: "+item.getCertType()+", Group Code: "+item.getGroupCode()+", Subkey: "+item.getVal());
+			System.out.println("CertType: "+item.getCertType()+", Group Code: "+item.getGroupCode()+", Subkey: "+item.getCipherPair()[1]);
 		}
 		// mod to valid symmetric key length
 		System.out.println("symkey: "+symKey);

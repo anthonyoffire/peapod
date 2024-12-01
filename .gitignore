@@ -37,3 +37,6 @@ hs_err_pid*
 
 #vscode
 .vscode/
+
+#output files
+*.out

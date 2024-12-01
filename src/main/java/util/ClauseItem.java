@@ -6,26 +6,26 @@ import java.math.BigInteger;
 public class ClauseItem implements Serializable{
 
     private CertType certType;
-    private BigInteger val;
+    private BigInteger[] cipherpair;
     private int groupCode;
     private static final long serialVersionUID = 3000L;
 
-    public ClauseItem(CertType certType, BigInteger val, int groupCode) {
+    public ClauseItem(CertType certType, BigInteger[] cipherpair, int groupCode) {
         this.certType = certType;
-        this.val = val;
+        this.cipherpair = cipherpair;
         this.groupCode = groupCode;
     }
     public CertType getCertType() {
         return certType;
     }
-    public BigInteger getVal() {
-        return val;
+    public BigInteger[] getCipherPair() {
+        return cipherpair;
     }
     public int getGroupCode() {
         return groupCode;
     }
-    public void setVal(BigInteger newVal){
-        this.val = newVal;
+    public void setCipherPair(BigInteger[] cipherpair){
+        this.cipherpair = cipherpair;
     }
     public void setGroupCode(int newCode){
         this.groupCode = newCode;

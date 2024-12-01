@@ -60,10 +60,10 @@ class PostJob extends Job {
         Map<String, Map<CertType, BigInteger>> userTransKeys){
             for (ClauseItem item: clause.getClause()){
                 CertType type = item.getCertType();
-                BigInteger message = item.getVal();
+                BigInteger[] cipherpair = item.getCipherPair();
                 BigInteger key = userTransKeys.get(user)
                     .get(type);
-                item.setVal(elgamalScheme.encrypt(key, message));
+                item.setCipherPair(elgamalScheme.reEncrypt(key, cipherpair));
             }
             entries.put(uuid, new Entry(clause, ciphertext, symScheme));
             return uuid;
@@ -98,7 +98,7 @@ class GetEntryJob extends Job {
                 for(ClauseItem item: storedItems){
                     CertType storedType = item.getCertType();
                     if(userType.equals(storedType)){
-                        ClauseItem clonedItem = new ClauseItem(storedType, item.getVal(), item.getGroupCode());
+                        ClauseItem clonedItem = new ClauseItem(storedType, item.getCipherPair(), item.getGroupCode());
                         validItems.add(clonedItem);
                     }
                 }
@@ -108,65 +108,68 @@ class GetEntryJob extends Job {
                 return 1;
             }
             
-            // Re-encrypt valid items for user
+            // Pre-decrypt valid items for user
             for(ClauseItem item: validItems){
                 CertType type = item.getCertType();
-                BigInteger message = item.getVal();
+                BigInteger[] cipherpair = item.getCipherPair();
                 BigInteger key = userTransKeys.get(user)
                     .get(type);
-                item.setVal(elgamalScheme.decrypt(key, message));
+                item.setCipherPair(elgamalScheme.preDecrypt(key, cipherpair));
             }
 
             /**
              * Blind
              */
 
-            // int n, groupCode;
-            // Set<Integer> groups = new HashSet<>();
+            int n, groupCode;
+            Set<Integer> groups = new HashSet<>();
 
-            // // Count number of distinct bf's we need
-            // for(ClauseItem item: validItems){
-            //     groupCode = item.getGroupCode();
-            //     if(!groups.contains(groupCode))
-            //         groups.add(groupCode);
-            // }
-            // n = groups.size();
+            // Count number of distinct bf's we need
+            for(ClauseItem item: validItems){
+                groupCode = item.getGroupCode();
+                if(!groups.contains(groupCode))
+                    groups.add(groupCode);
+            }
+            n = groups.size();
 
-            // BigInteger p = elgamalScheme.getP();
-            // BigInteger multiple = BigInteger.ONE;
-            // BigInteger val;
-            // List<BigInteger> blindingFactors = new ArrayList<>();
-            // // Generate n - 1 random numbers and multiply them 
-            // for(int i=1; i<n; i++){
-            //     val = elgamalScheme.randomKey();
-            //     blindingFactors.add(val);
-            //     multiple.multiply(val).mod(p);
-            // }
+            BigInteger p = elgamalScheme.getP();
+            BigInteger multiple = BigInteger.ONE;
+            BigInteger val;
+            List<BigInteger> blindingFactors = new ArrayList<>();
+            // Generate n - 1 random numbers and multiply them 
+            for(int i=1; i<n; i++){
+                val = elgamalScheme.randomKey();
+                blindingFactors.add(val);
+                multiple.multiply(val).mod(p);
+            }
 
-            // // Calc inverse
-            // BigInteger inverse = multiple.modInverse(p);
-            // blindingFactors.add(inverse);
+            // Calc inverse
+            BigInteger inverse = multiple.modInverse(p);
+            blindingFactors.add(inverse);
             
-            // // For each valid item, encrypt a blinding factor and multiply it
-            // // 1 bf per group code
-            // Map<Integer, BigInteger> bfMap = new HashMap<>();
-            // BigInteger bf, key;
-            // CertType type;
-            // for(ClauseItem item: validItems){
-            //     groupCode = item.getGroupCode();
-            //     type = item.getCertType();
+            // For each valid item, encrypt a blinding factor and multiply it
+            // 1 bf per group code
+            Map<Integer, BigInteger> bfMap = new HashMap<>();
+            BigInteger bf, key;
+            BigInteger[] bfPair, cipherpair;
+            CertType type;
+            for(ClauseItem item: validItems){
+                groupCode = item.getGroupCode();
+                type = item.getCertType();
 
-            //     if(!bfMap.containsKey(groupCode))
-            //         bfMap.put(groupCode, blindingFactors.remove(0));
-            //     bf = bfMap.get(groupCode);
-            //     key = userTransKeys.get(user)
-            //         .get(type);
-            //     bf = elgamalScheme.encrypt(key, bf);
-            //     val = item.getVal();
-            //         // .multiply(bf)
-            //         // .mod(p);
-            //     item.setVal(val);
-            // }
+                if(!bfMap.containsKey(groupCode))
+                    bfMap.put(groupCode, blindingFactors.remove(0));
+                bf = bfMap.get(groupCode);
+                key = userTransKeys.get(user)
+                    .get(type);
+                    
+                bfPair = elgamalScheme.encrypt(K, bf);
+                bfPair = elgamalScheme.preDecrypt(key, bfPair);
+
+                cipherpair = item.getCipherPair();
+                cipherpair = elgamalScheme.homomorphicMultiply(bfPair, cipherpair);
+                item.setCipherPair(cipherpair);
+            }
             return new Entry(new Clause(validItems), storedEntry.getCiphertext(), storedEntry.getSymScheme());
     }
 }
