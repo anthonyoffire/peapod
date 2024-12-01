@@ -153,7 +153,7 @@ public class PPClient {
 	 * plaintextToFile: output the (already found) plaintext
 	 */
 	private void plaintextToFile(){
-		String filename = rid + ".txt";
+		String filename = rid + ".out";
         String bigIntegerString = plaintext.toString();
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {

@@ -13,7 +13,10 @@ public class ElgamalScheme implements Serializable{
         this.bitlen = bitLen;
         SecureRandom r = new SecureRandom();
         p = BigInteger.probablePrime(bitLen, r);
-        g = new BigInteger("2");
+        // find g < p
+        do{
+            g = BigInteger.probablePrime(bitlen, r);
+        } while (g.compareTo(p) != -1);
     }
     public BigInteger getG() {
         return g;

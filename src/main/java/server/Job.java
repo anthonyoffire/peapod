@@ -114,60 +114,59 @@ class GetEntryJob extends Job {
                 BigInteger message = item.getVal();
                 BigInteger key = userTransKeys.get(user)
                     .get(type);
-                item.setVal(elgamalScheme.encrypt(key, message));
+                item.setVal(elgamalScheme.decrypt(key, message));
             }
 
             /**
              * Blind
              */
 
-            int n, groupCode;
-            Set<Integer> groups = new HashSet<>();
+            // int n, groupCode;
+            // Set<Integer> groups = new HashSet<>();
 
-            // Count number of distinct bf's we need
-            for(ClauseItem item: validItems){
-                groupCode = item.getGroupCode();
-                if(!groups.contains(groupCode))
-                    groups.add(groupCode);
-            }
-            n = groups.size();
+            // // Count number of distinct bf's we need
+            // for(ClauseItem item: validItems){
+            //     groupCode = item.getGroupCode();
+            //     if(!groups.contains(groupCode))
+            //         groups.add(groupCode);
+            // }
+            // n = groups.size();
 
-            BigInteger p = elgamalScheme.getP();
-            BigInteger multiple = BigInteger.ONE;
-            BigInteger val;
-            List<BigInteger> blindingFactors = new ArrayList<>();
-            // Generate n - 1 random numbers and multiply them 
-            for(int i=1; i<n; i++){
-                val = elgamalScheme.randomKey();
-                blindingFactors.add(val);
-                multiple.multiply(val).mod(p);
-            }
+            // BigInteger p = elgamalScheme.getP();
+            // BigInteger multiple = BigInteger.ONE;
+            // BigInteger val;
+            // List<BigInteger> blindingFactors = new ArrayList<>();
+            // // Generate n - 1 random numbers and multiply them 
+            // for(int i=1; i<n; i++){
+            //     val = elgamalScheme.randomKey();
+            //     blindingFactors.add(val);
+            //     multiple.multiply(val).mod(p);
+            // }
 
-            // Calc inverse
-            BigInteger inverse = multiple.modInverse(p);
-            blindingFactors.add(inverse);
+            // // Calc inverse
+            // BigInteger inverse = multiple.modInverse(p);
+            // blindingFactors.add(inverse);
             
-            // For each valid item, encrypt a blinding factor and multiply it
-            // 1 bf per group code
-            Map<Integer, BigInteger> bfMap = new HashMap<>();
-            BigInteger bf, key;
-            CertType type;
-            for(ClauseItem item: validItems){
-                groupCode = item.getGroupCode();
-                type = item.getCertType();
+            // // For each valid item, encrypt a blinding factor and multiply it
+            // // 1 bf per group code
+            // Map<Integer, BigInteger> bfMap = new HashMap<>();
+            // BigInteger bf, key;
+            // CertType type;
+            // for(ClauseItem item: validItems){
+            //     groupCode = item.getGroupCode();
+            //     type = item.getCertType();
 
-                if(!bfMap.containsKey(groupCode))
-                    bfMap.put(groupCode, blindingFactors.remove(0));
-                bf = bfMap.get(groupCode);
-                key = userTransKeys.get(user)
-                    .get(type);
-                bf = elgamalScheme.encrypt(key, bf);
-                val = item.getVal()
-                    .multiply(bf)
-                    .mod(p);
-                item.setVal(val);
-            }
-            System.out.println("job4");
+            //     if(!bfMap.containsKey(groupCode))
+            //         bfMap.put(groupCode, blindingFactors.remove(0));
+            //     bf = bfMap.get(groupCode);
+            //     key = userTransKeys.get(user)
+            //         .get(type);
+            //     bf = elgamalScheme.encrypt(key, bf);
+            //     val = item.getVal();
+            //         // .multiply(bf)
+            //         // .mod(p);
+            //     item.setVal(val);
+            // }
             return new Entry(new Clause(validItems), storedEntry.getCiphertext(), storedEntry.getSymScheme());
     }
 }
