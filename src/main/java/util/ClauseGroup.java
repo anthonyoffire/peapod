@@ -156,6 +156,25 @@ public class ClauseGroup {
                     clause.addItem(item);
                 }
                 return subkey_na;
+            case NOT:
+                // for NOT each cert in the group should have their own subkey and group
+                for (CertType cert : this.certList) {
+                    BigInteger subkey_not = scheme.randomKey();
+                    int code4;
+                    do {
+                        code4 = r.nextInt();
+                    } while (groupCodes.contains(code4));
+                    // add group code to list of group codes so we don't use it again
+                    groupCodes.add(code4);
+                    // add clause item to final clause
+                    ClauseItem item = new ClauseItem(
+                        cert,
+                        new BigInteger[]{BigInteger.ONE, subkey_not},
+                        code4);
+                    clause.addItem(item);
+                }
+                // however we don't multiply our symmetric key by this value
+                return BigInteger.ONE;
             default:
                 return BigInteger.valueOf(-1);
         }

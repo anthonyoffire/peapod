@@ -7,7 +7,8 @@ public enum LogicOpType {
     ANDNAND,
     OR,
     XOFN,
-    NA;
+    NA,
+    NOT;
 
     public static LogicOpType typeFromString(String type){
         switch(type){
@@ -16,6 +17,7 @@ public enum LogicOpType {
             case "OR": return OR;
             case "XOFN": return XOFN;
             case "NA": return NA;
+            case "NOT": return NOT;
             default: return null;
         }
     }
