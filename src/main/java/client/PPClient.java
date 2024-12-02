@@ -300,7 +300,7 @@ public class PPClient {
 				System.err.println("ERROR: Could not process group");
 			}
 			symKey = symKey.multiply(subkey).mod(elgamalScheme.getP());
-			System.out.println("Group: "+key+", ClauseGroup OP: "+group.getOperation()+", Certs: "+group.getCertList()+", Num Required (XOFN): "+group.getNumRequired());
+			//System.out.println("Group: "+key+", ClauseGroup OP: "+group.getOperation()+", Certs: "+group.getCertList()+", Num Required (XOFN): "+group.getNumRequired());
 		}
 		for (CertType certification : CertType.values()) {
 			if (!certsUsed.contains(certification)) {
@@ -316,13 +316,8 @@ public class PPClient {
 				cl.addItem(dontCare);
 			}
 		}
-		for (ClauseItem item : cl.getClause()) {
-			System.out.println("CertType: "+item.getCertType()+", Group Code: "+item.getGroupCode()+", Subkey: "+item.getCipherPair()[1]);
-		}
 		// mod to valid symmetric key length
-		System.out.println("symkey: "+symKey);
 		this.symmetricKey = symKey.mod((BigInteger.TWO).pow(AES_BITLEN));
-		System.out.println("modsymkey: "+symmetricKey);
         return cl;
     }
     /**

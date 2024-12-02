@@ -210,6 +210,7 @@ class GetKeysJob extends Job {
             return userKeys;
     }
 }
+/* Don't look at me */
 class DeleteJob extends Job {
 
     public DeleteJob(){
