@@ -10,6 +10,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -250,6 +251,8 @@ public class PPClient {
 		System.out.println("Getting clause from file...");
         Clause cl = new Clause(new ArrayList<ClauseItem>());
 		Map<Integer, ClauseGroup> groups = new HashMap<>();
+		Set<CertType> certsUsed = new HashSet<CertType>();
+		SecureRandom r = new SecureRandom();
         try (BufferedReader reader = 
 			new BufferedReader(
 			new FileReader(path))){  
@@ -262,6 +265,7 @@ public class PPClient {
 					}
 					String[] attributes = line.split(",");
 					CertType cert = CertType.typeFromString(attributes[0].trim());
+					certsUsed.add(cert);
 					int groupCode = 0;
 					try {
 						groupCode = Integer.parseInt(attributes[1].trim());
@@ -298,6 +302,20 @@ public class PPClient {
 			}
 			symKey = symKey.multiply(subkey).mod(elgamalScheme.getP());
 			System.out.println("Group: "+key+", ClauseGroup OP: "+group.getOperation()+", Certs: "+group.getCertList()+", Num Required (XOFN): "+group.getNumRequired());
+		}
+		for (CertType certification : CertType.values()) {
+			if (!certsUsed.contains(certification)) {
+				int code;
+                do {
+                    code = r.nextInt();
+                } while (FinalGroupCodes.contains(code));
+                // add group code to list of group codes so we don't use it again
+                FinalGroupCodes.add(code);
+				ClauseItem dontCare = new ClauseItem(certification, 
+				new BigInteger[]{BigInteger.ONE, BigInteger.valueOf(1)},
+				code);
+				cl.addItem(dontCare);
+			}
 		}
 		for (ClauseItem item : cl.getClause()) {
 			System.out.println("CertType: "+item.getCertType()+", Group Code: "+item.getGroupCode()+", Subkey: "+item.getCipherPair()[1]);
