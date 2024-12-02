@@ -1,6 +1,11 @@
 # logical_peapod
 PEAPOD logical expansion.
 
+## Requirements
+Linux
+Maven 3.8.7
+Java 17
+
 ## Build & Run
 Once per terminal session, from main dir, run:
 ```console
