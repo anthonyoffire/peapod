@@ -144,7 +144,6 @@ public class PPClient {
 				groupCodes.add(groupCode);
 				val = item.getCipherPair()[1];
 				symmetricKey = symmetricKey.multiply(val).mod(p);
-				System.out.println("key-piece: "+val);
 			}
 		}
 		symmetricKey = symmetricKey.mod((BigInteger.TWO).pow(AES_BITLEN));

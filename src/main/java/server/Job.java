@@ -136,16 +136,20 @@ class GetEntryJob extends Job {
             BigInteger multiple = BigInteger.ONE;
             BigInteger val;
             List<BigInteger> blindingFactors = new ArrayList<>();
-            // Generate n - 1 random numbers and multiply them 
-            for(int i=1; i<n; i++){
-                val = elgamalScheme.randomKey();
-                blindingFactors.add(val);
-                multiple.multiply(val).mod(p);
-            }
+            if(n > 1){
+                // Generate n - 1 random numbers and multiply them 
+                for(int i=1; i<n; i++){
+                    val = elgamalScheme.randomKey();
+                    blindingFactors.add(val);
+                    multiple = multiple.multiply(val).mod(p);
+                }
 
-            // Calc inverse
-            BigInteger inverse = multiple.modInverse(p);
-            blindingFactors.add(inverse);
+                // Calc inverse
+                BigInteger inverse = multiple.modInverse(p);
+                blindingFactors.add(inverse);
+            } else {
+                blindingFactors.add(BigInteger.ONE);
+            }
             
             // For each valid item, encrypt a blinding factor and multiply it
             // 1 bf per group code
@@ -162,7 +166,7 @@ class GetEntryJob extends Job {
                 bf = bfMap.get(groupCode);
                 key = userTransKeys.get(user)
                     .get(type);
-                    
+
                 bfPair = elgamalScheme.encrypt(K, bf);
                 bfPair = elgamalScheme.preDecrypt(key, bfPair);
 
